@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.csl_kotlin_projekt.ui.screens.splash.SplashScreen
 import com.example.csl_kotlin_projekt.ui.screens.login.LoginScreen
+import com.example.csl_kotlin_projekt.ui.screens.register.RegisterScreen
 import com.example.csl_kotlin_projekt.ui.screens.home.HomeScreen
 
 @Composable
@@ -37,6 +38,23 @@ fun AppNavigation(
                 onNavigateToHome = {
                     navController.navigate("home") {
                         popUpTo("login") { inclusive = true }
+                    }
+                },
+                onNavigateToRegister = {
+                    navController.navigate("register")
+                }
+            )
+        }
+        composable("register") {
+            RegisterScreen(
+                onNavigateToHome = {
+                    navController.navigate("home") {
+                        popUpTo("register") { inclusive = true }
+                    }
+                },
+                onNavigateToLogin = {
+                    navController.navigate("login") {
+                        popUpTo("register") { inclusive = true }
                     }
                 }
             )

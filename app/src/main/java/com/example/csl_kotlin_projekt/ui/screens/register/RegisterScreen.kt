@@ -1,4 +1,4 @@
-package com.example.csl_kotlin_projekt.ui.screens.login
+package com.example.csl_kotlin_projekt.ui.screens.register
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -27,21 +28,20 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(
+fun RegisterScreen(
     onNavigateToHome: () -> Unit,
-    onNavigateToRegister: () -> Unit = {},
-    onNavigateToForgotPassword: () -> Unit = {},
-    viewModel: LoginViewModel = viewModel()
+    onNavigateToLogin: () -> Unit,
+    viewModel: RegisterViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val uiState by viewModel.uiState.collectAsState()
     
-    // Handle successful login
-    LaunchedEffect(uiState.isLoginSuccessful) {
-        if (uiState.isLoginSuccessful) {
+    // Handle successful registration
+    LaunchedEffect(uiState.isRegistrationSuccessful) {
+        if (uiState.isRegistrationSuccessful) {
             onNavigateToHome()
-            viewModel.resetLoginSuccess()
+            viewModel.resetRegistrationSuccess()
         }
     }
     
@@ -63,7 +63,7 @@ fun LoginScreen(
             ) {
                 // App Title
                 Text(
-                    text = "Welcome Back",
+                    text = "Create Account",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
@@ -73,13 +73,44 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 Text(
-                    text = "Sign in to Laci's Smexy App",
+                    text = "Join Laci's Smexy App",
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 Spacer(modifier = Modifier.height(32.dp))
+                
+                // Username Field
+                OutlinedTextField(
+                    value = uiState.username,
+                    onValueChange = viewModel::updateUsername,
+                    label = { Text("Username") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Person, contentDescription = "Username")
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    ),
+                    isError = uiState.usernameError != null,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                // Username Error
+                if (uiState.usernameError != null) {
+                    Text(
+                        text = uiState.usernameError!!,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
                 
                 // Email Field
                 OutlinedTextField(
@@ -132,11 +163,11 @@ fun LoginScreen(
                     },
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Password ,
-                        imeAction = ImeAction.Done
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Next
                     ),
                     keyboardActions = KeyboardActions(
-                        onDone = { focusManager.clearFocus() }
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
                     ),
                     isError = uiState.passwordError != null,
                     modifier = Modifier.fillMaxWidth()
@@ -152,14 +183,46 @@ fun LoginScreen(
                     )
                 }
                 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 
-                // Forgot Password Link
-                TextButton(
-                    onClick = onNavigateToForgotPassword,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Forgot Password?")
+                // Confirm Password Field
+                var confirmPasswordVisible by remember { mutableStateOf(false) }
+                
+                OutlinedTextField(
+                    value = uiState.confirmPassword,
+                    onValueChange = viewModel::updateConfirmPassword,
+                    label = { Text("Confirm Password") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Lock, contentDescription = "Confirm Password")
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                            Icon(
+                                imageVector = if (confirmPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password"
+                            )
+                        }
+                    },
+                    visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { focusManager.clearFocus() }
+                    ),
+                    isError = uiState.confirmPasswordError != null,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                // Confirm Password Error
+                if (uiState.confirmPasswordError != null) {
+                    Text(
+                        text = uiState.confirmPasswordError!!,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -183,9 +246,9 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
                 
-                // Login Button
+                // Register Button
                 Button(
-                    onClick = { viewModel.login(context, onNavigateToHome) },
+                    onClick = { viewModel.register(context, onNavigateToHome) },
                     enabled = !uiState.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -196,18 +259,18 @@ fun LoginScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                     }
-                    Text(if (uiState.isLoading) "Signing In..." else "Sign In")
+                    Text(if (uiState.isLoading) "Creating Account..." else "Create Account")
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                // Register Link
+                // Login Link
                 TextButton(
-                    onClick = onNavigateToRegister,
+                    onClick = onNavigateToLogin,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Don't have an account? Sign Up",
+                        text = "Already have an account? Sign In",
                         textAlign = TextAlign.Center
                     )
                 }

@@ -31,6 +31,22 @@ data class TokensDto(
     val refreshToken: String
 )
 
+data class SignInDto(
+    @SerializedName("email")
+    val email: String,
+    @SerializedName("password")
+    val password: String
+)
+
+data class SignUpDto(
+    @SerializedName("username")
+    val username: String,
+    @SerializedName("email")
+    val email: String,
+    @SerializedName("password")
+    val password: String
+)
+
 data class TokenRefreshRequest(
     @SerializedName("refreshToken")
     val refreshToken: String

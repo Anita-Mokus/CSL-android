@@ -4,7 +4,10 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.example.csl_kotlin_projekt.data.api.AuthApiService
 import com.example.csl_kotlin_projekt.data.models.AuthResponseDto
+import com.example.csl_kotlin_projekt.data.models.SignInDto
+import com.example.csl_kotlin_projekt.data.models.SignUpDto
 import com.example.csl_kotlin_projekt.data.models.TokenRefreshRequest
+import okhttp3.MultipartBody
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -47,6 +50,58 @@ class AuthRepository(
         val accessToken = getAccessToken()
         val refreshToken = getRefreshToken()
         return !accessToken.isNullOrEmpty() && !refreshToken.isNullOrEmpty()
+    }
+    
+    suspend fun signUp(username: String, email: String, password: String): Result<AuthResponseDto> = withContext(Dispatchers.IO) {
+        try {
+            val usernamePart = MultipartBody.Part.createFormData("username", username)
+            val emailPart = MultipartBody.Part.createFormData("email", email)
+            val passwordPart = MultipartBody.Part.createFormData("password", password)
+            
+            val response = authApiService.signUp(usernamePart, emailPart, passwordPart)
+            
+            if (response.isSuccessful && response.body() != null) {
+                val authResponse = response.body()!!
+                saveTokens(authResponse)
+                Result.success(authResponse)
+            } else {
+                Result.failure(Exception("Registration failed: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun signIn(email: String, password: String): Result<AuthResponseDto> = withContext(Dispatchers.IO) {
+        try {
+            val request = SignInDto(email, password)
+            val response = authApiService.signIn(request)
+            
+            if (response.isSuccessful && response.body() != null) {
+                val authResponse = response.body()!!
+                saveTokens(authResponse)
+                Result.success(authResponse)
+            } else {
+                Result.failure(Exception("Login failed: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun logout(): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val response = authApiService.logout()
+            clearTokens() // Always clear local tokens regardless of API response
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Logout failed: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            clearTokens() // Clear tokens even if API call fails
+            Result.failure(e)
+        }
     }
     
     suspend fun refreshAccessToken(): Result<AuthResponseDto> = withContext(Dispatchers.IO) {

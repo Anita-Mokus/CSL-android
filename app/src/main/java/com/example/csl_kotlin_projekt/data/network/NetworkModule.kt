@@ -1,6 +1,9 @@
 package com.example.csl_kotlin_projekt.data.network
 
+import android.content.Context
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -14,19 +17,44 @@ object NetworkModule {
         level = HttpLoggingInterceptor.Level.BODY
     }
     
-    private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(loggingInterceptor)
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .build()
+    // Authentication interceptor to add access token to requests
+    private fun createAuthInterceptor(context: Context): Interceptor {
+        return Interceptor { chain ->
+            val request = chain.request()
+            val sharedPreferences = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+            val accessToken = sharedPreferences.getString("access_token", null)
+            
+            val newRequest = if (accessToken != null && !accessToken.isEmpty()) {
+                request.newBuilder()
+                    .addHeader("Authorization", "Bearer $accessToken")
+                    .build()
+            } else {
+                request
+            }
+            
+            chain.proceed(newRequest)
+        }
+    }
     
-    private val retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .client(okHttpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
+    fun createOkHttpClient(context: Context): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor)
+            .addInterceptor(createAuthInterceptor(context))
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
     
-    val authApiService: com.example.csl_kotlin_projekt.data.api.AuthApiService = 
-        retrofit.create(com.example.csl_kotlin_projekt.data.api.AuthApiService::class.java)
+    fun createRetrofit(context: Context): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(createOkHttpClient(context))
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+    
+    fun createAuthApiService(context: Context): com.example.csl_kotlin_projekt.data.api.AuthApiService {
+        return createRetrofit(context).create(com.example.csl_kotlin_projekt.data.api.AuthApiService::class.java)
+    }
 }

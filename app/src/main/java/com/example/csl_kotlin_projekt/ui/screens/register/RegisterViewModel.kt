@@ -95,7 +95,7 @@ class RegisterViewModel : ViewModel() {
         
         viewModelScope.launch {
             try {
-                val authRepository = createAuthRepository(context, NetworkModule.authApiService)
+                val authRepository = createAuthRepository(context)
                 val result = authRepository.signUp(
                     currentState.username,
                     currentState.email,

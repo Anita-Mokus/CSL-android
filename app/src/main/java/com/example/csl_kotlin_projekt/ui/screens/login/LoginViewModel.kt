@@ -68,7 +68,7 @@ class LoginViewModel : ViewModel() {
         
         viewModelScope.launch {
             try {
-                val authRepository = createAuthRepository(context, NetworkModule.authApiService)
+                val authRepository = createAuthRepository(context)
                 val result = authRepository.signIn(currentState.email, currentState.password)
                 
                 if (result.isSuccess) {

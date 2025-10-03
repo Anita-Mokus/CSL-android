@@ -28,7 +28,7 @@ class SplashViewModel : ViewModel() {
                 // Minimum 3 seconds splash duration
                 delay(3000)
                 
-                val authRepository = createAuthRepository(context, NetworkModule.authApiService)
+                val authRepository = createAuthRepository(context)
                 
                 if (!authRepository.isLoggedIn()) {
                     _uiState.value = _uiState.value.copy(

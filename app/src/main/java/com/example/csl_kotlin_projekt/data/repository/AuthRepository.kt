@@ -128,7 +128,8 @@ class AuthRepository(
 }
 
 // Extension function to create AuthRepository
-fun createAuthRepository(context: Context, authApiService: AuthApiService): AuthRepository {
+fun createAuthRepository(context: Context): AuthRepository {
     val sharedPreferences = context.getSharedPreferences(AuthRepository.PREF_NAME, Context.MODE_PRIVATE)
+    val authApiService = com.example.csl_kotlin_projekt.data.network.NetworkModule.createAuthApiService(context)
     return AuthRepository(authApiService, sharedPreferences)
 }

@@ -23,7 +23,7 @@ class HomeViewModel : ViewModel() {
     
     fun loadUserInfo(context: android.content.Context) {
         viewModelScope.launch {
-            val authRepository = createAuthRepository(context, NetworkModule.authApiService)
+            val authRepository = createAuthRepository(context)
             _uiState.value = _uiState.value.copy(
                 username = authRepository.getUsername(),
                 email = authRepository.getEmail()
@@ -39,7 +39,7 @@ class HomeViewModel : ViewModel() {
         
         viewModelScope.launch {
             try {
-                val authRepository = createAuthRepository(context, NetworkModule.authApiService)
+                val authRepository = createAuthRepository(context)
                 val result = authRepository.logout()
                 
                 if (result.isSuccess) {

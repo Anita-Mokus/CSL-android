@@ -17,21 +17,30 @@ object NetworkModule {
         level = HttpLoggingInterceptor.Level.BODY
     }
     
-    // Authentication interceptor to add access token to requests
+    // Authentication interceptor to add the correct token to requests
     private fun createAuthInterceptor(context: Context): Interceptor {
         return Interceptor { chain ->
             val request = chain.request()
             val sharedPreferences = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
-            val accessToken = sharedPreferences.getString("access_token", null)
-            
-            val newRequest = if (accessToken != null && !accessToken.isEmpty()) {
+
+            val isRefreshEndpoint = request.url.encodedPath.contains("/auth/local/refresh")
+
+            val token = if (isRefreshEndpoint) {
+                // For the refresh endpoint, use the refresh token
+                sharedPreferences.getString("refresh_token", null)
+            } else {
+                // For all other endpoints, use the access token
+                sharedPreferences.getString("access_token", null)
+            }
+
+            val newRequest = if (token != null && !token.isEmpty()) {
                 request.newBuilder()
-                    .addHeader("Authorization", "Bearer $accessToken")
+                    .addHeader("Authorization", "Bearer $token")
                     .build()
             } else {
                 request
             }
-            
+
             chain.proceed(newRequest)
         }
     }

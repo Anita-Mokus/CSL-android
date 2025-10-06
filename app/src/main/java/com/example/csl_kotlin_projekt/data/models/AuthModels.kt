@@ -6,9 +6,9 @@ data class AuthResponseDto(
     @SerializedName("message")
     val message: String,
     @SerializedName("user")
-    val user: UserDto,
+    val user: UserDto?,
     @SerializedName("tokens")
-    val tokens: TokensDto
+    val tokens: TokensDto?
 )
 
 data class UserDto(
@@ -45,9 +45,4 @@ data class SignUpDto(
     val email: String,
     @SerializedName("password")
     val password: String
-)
-
-data class TokenRefreshRequest(
-    @SerializedName("refreshToken")
-    val refreshToken: String
 )

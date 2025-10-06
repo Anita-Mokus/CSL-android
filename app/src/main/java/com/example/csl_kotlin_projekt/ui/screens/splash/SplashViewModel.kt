@@ -38,9 +38,9 @@ class SplashViewModel : ViewModel() {
                     return@launch
                 }
                 
-                // Try to refresh token to validate it
+                // Try to refresh token to validate it and get new access token
                 val refreshResult = authRepository.refreshAccessToken()
-                
+
                 if (refreshResult.isSuccess) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -51,7 +51,8 @@ class SplashViewModel : ViewModel() {
                     authRepository.clearTokens()
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        shouldNavigateToLogin = true
+                        shouldNavigateToLogin = true,
+                        error = refreshResult.exceptionOrNull()?.message
                     )
                 }
                 

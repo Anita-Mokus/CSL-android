@@ -66,4 +66,8 @@ object NetworkModule {
     fun createAuthApiService(context: Context): com.example.csl_kotlin_projekt.data.api.AuthApiService {
         return createRetrofit(context).create(com.example.csl_kotlin_projekt.data.api.AuthApiService::class.java)
     }
+
+    fun createScheduleApiService(context: Context): com.example.csl_kotlin_projekt.data.api.ScheduleApiService {
+        return createRetrofit(context).create(com.example.csl_kotlin_projekt.data.api.ScheduleApiService::class.java)
+    }
 }

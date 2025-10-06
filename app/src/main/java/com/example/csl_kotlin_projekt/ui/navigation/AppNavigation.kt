@@ -9,6 +9,11 @@ import com.example.csl_kotlin_projekt.ui.screens.splash.SplashScreen
 import com.example.csl_kotlin_projekt.ui.screens.login.LoginScreen
 import com.example.csl_kotlin_projekt.ui.screens.register.RegisterScreen
 import com.example.csl_kotlin_projekt.ui.screens.home.HomeScreen
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 
 @Composable
 fun AppNavigation(
@@ -58,6 +63,12 @@ fun AppNavigation(
                     }
                 }
             )
+        }
+        composable("add_schedule") {
+            // Placeholder for Add Schedule Screen
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Add Schedule Screen (Not Implemented)")
+            }
         }
         composable("home") {
             HomeScreen(

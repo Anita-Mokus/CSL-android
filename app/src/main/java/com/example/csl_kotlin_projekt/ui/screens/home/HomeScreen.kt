@@ -1,7 +1,10 @@
 package com.example.csl_kotlin_projekt.ui.screens.home
 
+import HomeViewModel
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -11,8 +14,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,109 +28,138 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    
-    // Load user info when screen is first displayed
+
+    // Load user info and schedule when screen is first displayed
     LaunchedEffect(Unit) {
         viewModel.loadUserInfo(context)
+        viewModel.loadSchedule(context)
     }
-    
+
+    // Handle successful logout
+    LaunchedEffect(uiState.isLogoutSuccessful) {
+        if (uiState.isLogoutSuccessful) {
+            onNavigateToLogin()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Laci's Smexy App") },
                 actions = {
-                    IconButton(onClick = { viewModel.logout(context, onNavigateToLogin) }) {
+                    IconButton(onClick = { viewModel.logout(context) }) {
                         Icon(Icons.Default.Person, contentDescription = "Profile")
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { /* TODO: Navigate to Add Schedule screen */ }) {
+                Icon(Icons.Default.Add, contentDescription = "Add Schedule")
+            }
         }
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
+                .padding(paddingValues)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(24.dp)
-            ) {
-                // Welcome Message
-                Text(
-                    text = "Welcome to Home Screen!",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // User Info
-                if (uiState.username != null) {
-                    Text(
-                        text = "Hello, ${uiState.username}!",
-                        fontSize = 18.sp,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.primary
+            // Welcome Message
+            Text(
+                text = "Today's Schedule",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.align(Alignment.Start)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Loading Indicator
+            if (uiState.isLoading) {
+                CircularProgressIndicator()
+            }
+
+            // Error Message
+            if (uiState.scheduleError != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
                     )
-                    
-                    if (uiState.email != null) {
-                        Text(
-                            text = uiState.email!!,
-                            fontSize = 14.sp,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Description
-                Text(
-                    text = "This is the main home screen where the user's daily schedule will be displayed",
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center
-                )
-                
-                Spacer(modifier = Modifier.height(32.dp))
-                
-                // Logout Error
-                if (uiState.logoutError != null) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        )
-                    ) {
-                        Text(
-                            text = uiState.logoutError!!,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            fontSize = 14.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-                
-                // Logout Button
-                Button(
-                    onClick = { viewModel.logout(context, onNavigateToLogin) },
-                    enabled = !uiState.isLoading,
-                    modifier = Modifier.fillMaxWidth(0.8f)
                 ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Text(if (uiState.isLoading) "Logging Out..." else "Logout")
+                    Text(
+                        text = uiState.scheduleError!!,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    )
                 }
+            }
+
+            // Empty Schedule Message
+            if (!uiState.isLoading && uiState.schedule.isEmpty() && uiState.scheduleError == null) {
+                Text(
+                    text = "You have no schedules for today. Add one to get started!",
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+
+            // Schedule List
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(uiState.schedule) { schedule ->
+                    ScheduleItem(schedule = schedule)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ScheduleItem(schedule: com.example.csl_kotlin_projekt.data.models.ScheduleResponseDto) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Status Indicator
+            Checkbox(
+                checked = schedule.status == com.example.csl_kotlin_projekt.data.models.ScheduleStatus.Completed,
+                onCheckedChange = { /* TODO: Handle status change */ },
+                modifier = Modifier.size(24.dp)
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Schedule Info
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = schedule.habit.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(schedule.startTime),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // More Options Icon
+            IconButton(onClick = { /* TODO: Handle more options */ }) {
+                Icon(Icons.Default.MoreVert, contentDescription = "More Options")
             }
         }
     }

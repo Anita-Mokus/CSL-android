@@ -45,7 +45,7 @@ data class HabitResponseDto(
     val updatedAt: Date
 )
 
-data class HabitCategoryResponseDto(
+data class HabitCategory(
     @SerializedName("id")
     val id: Int,
     @SerializedName("name")

@@ -25,10 +25,12 @@ import androidx.compose.foundation.lazy.items
 fun HomeScreen(
     onNavigateToLogin: () -> Unit,
     onNavigateToAddSchedule: () -> Unit,
+    onNavigateToAddHabit: () -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+    var showMenu by remember { mutableStateOf(false) }
 
     // Load user info and schedule when screen is first displayed
     LaunchedEffect(Unit) {
@@ -50,6 +52,21 @@ fun HomeScreen(
                 actions = {
                     IconButton(onClick = { viewModel.logout(context) }) {
                         Icon(Icons.Default.Person, contentDescription = "Profile")
+                    }
+                    // Overflow menu for extra actions
+                    Box {
+                        IconButton(onClick = { showMenu = !showMenu }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "More")
+                        }
+                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Add Habit") },
+                                onClick = {
+                                    showMenu = false
+                                    onNavigateToAddHabit()
+                                }
+                            )
+                        }
                     }
                 }
             )

@@ -4,6 +4,7 @@ import com.example.csl_kotlin_projekt.data.models.ScheduleResponseDto
 import com.example.csl_kotlin_projekt.data.models.HabitResponseDto
 import com.example.csl_kotlin_projekt.data.models.CreateCustomScheduleDto
 import com.example.csl_kotlin_projekt.data.models.CreateHabitDto
+import com.example.csl_kotlin_projekt.data.models.HabitCategory
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -21,6 +22,11 @@ interface ScheduleApiService {
     suspend fun getAllHabits(
         @Header("Authorization") authorization: String
     ): Response<List<HabitResponseDto>>
+
+    @GET("habit/categories")
+    suspend fun getHabitCategories(
+        @Header("Authorization") authorization: String
+    ): Response<List<HabitCategory>>
 
     @POST("schedule/custom")
     suspend fun createCustomSchedule(

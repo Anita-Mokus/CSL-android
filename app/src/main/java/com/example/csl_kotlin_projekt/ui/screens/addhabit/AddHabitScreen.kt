@@ -20,6 +20,11 @@ fun AddHabitScreen(
     viewModel: AddHabitViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.loadCategories(context)
+    }
 
     LaunchedEffect(uiState.isCreated) {
         if (uiState.isCreated) onNavigateBack()
@@ -57,13 +62,39 @@ fun AddHabitScreen(
                 label = { Text("Description (optional)") },
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
-                value = uiState.categoryId,
-                onValueChange = viewModel::updateCategoryId,
-                label = { Text("Category ID") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
-            )
+
+            // Category selector
+            var expanded by remember { mutableStateOf(false) }
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                OutlinedTextField(
+                    value = uiState.selectedCategory?.name ?: "Select a category",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Category") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    uiState.categories.forEach { cat ->
+                        DropdownMenuItem(
+                            text = { Text(cat.name) },
+                            onClick = {
+                                viewModel.onCategorySelected(cat)
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
             OutlinedTextField(
                 value = uiState.goal,
                 onValueChange = viewModel::updateGoal,
@@ -75,7 +106,6 @@ fun AddHabitScreen(
                 Text(uiState.error!!, color = MaterialTheme.colorScheme.error)
             }
 
-            val context = LocalContext.current
             Button(
                 onClick = { viewModel.createHabit(context) },
                 enabled = !uiState.isLoading,

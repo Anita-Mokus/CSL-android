@@ -85,6 +85,9 @@ fun AppNavigation(
                 },
                 onNavigateToAddSchedule = {
                     navController.navigate("add_schedule")
+                },
+                onNavigateToAddHabit = {
+                    navController.navigate("add_habit")
                 }
             )
         }

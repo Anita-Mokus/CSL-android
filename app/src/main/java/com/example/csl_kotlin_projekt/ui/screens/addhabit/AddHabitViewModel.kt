@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.csl_kotlin_projekt.data.models.CreateHabitDto
+import com.example.csl_kotlin_projekt.data.models.HabitCategory
 import com.example.csl_kotlin_projekt.data.network.NetworkModule
 import com.example.csl_kotlin_projekt.data.repository.ScheduleRepository
 import com.example.csl_kotlin_projekt.data.repository.createAuthRepository
@@ -19,7 +20,9 @@ data class AddHabitUiState(
     val goal: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isCreated: Boolean = false
+    val isCreated: Boolean = false,
+    val categories: List<HabitCategory> = emptyList(),
+    val selectedCategory: HabitCategory? = null,
 )
 
 class AddHabitViewModel : ViewModel() {
@@ -30,6 +33,39 @@ class AddHabitViewModel : ViewModel() {
     fun updateDescription(v: String) { _uiState.value = _uiState.value.copy(description = v, error = null) }
     fun updateCategoryId(v: String) { _uiState.value = _uiState.value.copy(categoryId = v, error = null) }
     fun updateGoal(v: String) { _uiState.value = _uiState.value.copy(goal = v, error = null) }
+
+    fun onCategorySelected(cat: HabitCategory) {
+        _uiState.value = _uiState.value.copy(
+            selectedCategory = cat,
+            categoryId = cat.id.toString(), // keep numeric field in sync
+            error = null
+        )
+    }
+
+    fun loadCategories(context: android.content.Context) {
+        Log.d("AddHabitVM", "loadCategories called")
+        viewModelScope.launch {
+            val authRepo = createAuthRepository(context)
+            val token = authRepo.getAccessToken()
+            if (token.isNullOrBlank()) {
+                Log.w("AddHabitVM", "No access token found; cannot load categories")
+                // Don't block creation UI; just show error message
+                _uiState.value = _uiState.value.copy(error = "You must be logged in to load categories.")
+                return@launch
+            }
+            val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
+            val result = repo.getHabitCategories(token)
+            if (result.isSuccess) {
+                val list = result.getOrNull().orEmpty()
+                Log.d("AddHabitVM", "getHabitCategories succeeded: count=${list.size}")
+                _uiState.value = _uiState.value.copy(categories = list, error = null)
+            } else {
+                val msg = result.exceptionOrNull()?.message ?: "Failed to load categories"
+                Log.w("AddHabitVM", "getHabitCategories failed: $msg")
+                _uiState.value = _uiState.value.copy(error = msg)
+            }
+        }
+    }
 
     fun createHabit(context: android.content.Context) {
         val s = _uiState.value
@@ -71,4 +107,3 @@ class AddHabitViewModel : ViewModel() {
         }
     }
 }
-

@@ -6,6 +6,7 @@ import com.example.csl_kotlin_projekt.data.models.ScheduleResponseDto
 import com.example.csl_kotlin_projekt.data.models.HabitResponseDto
 import com.example.csl_kotlin_projekt.data.models.CreateCustomScheduleDto
 import com.example.csl_kotlin_projekt.data.models.CreateHabitDto
+import com.example.csl_kotlin_projekt.data.models.HabitCategory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -49,6 +50,28 @@ class ScheduleRepository(private val scheduleApiService: ScheduleApiService) {
             }
         } catch (e: Exception) {
             Log.e("ScheduleRepository", "getAllHabits exception", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getHabitCategories(accessToken: String): Result<List<HabitCategory>> = withContext(Dispatchers.IO) {
+        try {
+            Log.d("ScheduleRepository", "Making get/habit/categories...")
+            val response = scheduleApiService.getHabitCategories("Bearer $accessToken")
+            Log.d("ScheduleRepository", "getHabitCategories response code=${response.code()} message=${response.message()}")
+            if (!response.isSuccessful) {
+                val err = try { response.errorBody()?.string() } catch (_: Exception) { null }
+                if (!err.isNullOrBlank()) {
+                    Log.d("ScheduleRepository", "getHabitCategories errorBody=$err")
+                }
+            }
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to fetch habit categories: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Log.e("ScheduleRepository", "getHabitCategories exception", e)
             Result.failure(e)
         }
     }

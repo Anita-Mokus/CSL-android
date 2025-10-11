@@ -86,3 +86,27 @@ data class ScheduleResponseDto(
     @SerializedName("notes")
     val notes: String?
 )
+
+data class CreateCustomScheduleDto(
+    @SerializedName("habitId")
+    val habitId: Int,
+    @SerializedName("date")
+    val date: String,
+    @SerializedName("start_time")
+    val startTime: String,
+    @SerializedName("duration_minutes")
+    val durationMinutes: Int?,
+    @SerializedName("notes")
+    val notes: String?
+)
+
+data class CreateHabitDto(
+    @SerializedName("name")
+    val name: String,
+    @SerializedName("description")
+    val description: String?,
+    @SerializedName("categoryId")
+    val categoryId: Int,
+    @SerializedName("goal")
+    val goal: String
+)

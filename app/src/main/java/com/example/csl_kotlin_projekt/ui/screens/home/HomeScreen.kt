@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.items
 @Composable
 fun HomeScreen(
     onNavigateToLogin: () -> Unit,
+    onNavigateToAddSchedule: () -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -54,7 +55,7 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { /* TODO: Navigate to Add Schedule screen */ }) {
+            FloatingActionButton(onClick = { onNavigateToAddSchedule() }) {
                 Icon(Icons.Default.Add, contentDescription = "Add Schedule")
             }
         }

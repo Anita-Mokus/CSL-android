@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.csl_kotlin_projekt.ui.screens.createschedule.CreateScheduleScreen
+import com.example.csl_kotlin_projekt.ui.screens.addhabit.AddHabitScreen
 
 @Composable
 fun AppNavigation(
@@ -65,10 +67,14 @@ fun AppNavigation(
             )
         }
         composable("add_schedule") {
-            // Placeholder for Add Schedule Screen
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Add Schedule Screen (Not Implemented)")
-            }
+            CreateScheduleScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable("add_habit") {
+            AddHabitScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
         composable("home") {
             HomeScreen(
@@ -76,6 +82,9 @@ fun AppNavigation(
                     navController.navigate("login") {
                         popUpTo("home") { inclusive = true }
                     }
+                },
+                onNavigateToAddSchedule = {
+                    navController.navigate("add_schedule")
                 }
             )
         }

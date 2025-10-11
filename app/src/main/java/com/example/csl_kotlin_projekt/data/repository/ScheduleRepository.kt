@@ -1,7 +1,11 @@
 package com.example.csl_kotlin_projekt.data.repository
 
+import android.util.Log
 import com.example.csl_kotlin_projekt.data.api.ScheduleApiService
 import com.example.csl_kotlin_projekt.data.models.ScheduleResponseDto
+import com.example.csl_kotlin_projekt.data.models.HabitResponseDto
+import com.example.csl_kotlin_projekt.data.models.CreateCustomScheduleDto
+import com.example.csl_kotlin_projekt.data.models.CreateHabitDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -23,6 +27,63 @@ class ScheduleRepository(private val scheduleApiService: ScheduleApiService) {
                 Result.failure(Exception("Failed to fetch schedule: ${response.message()}"))
             }
         } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getAllHabits(accessToken: String): Result<List<HabitResponseDto>> = withContext(Dispatchers.IO) {
+        try {
+            Log.d("ScheduleRepository", "Making get/habit...")
+            val response = scheduleApiService.getAllHabits("Bearer $accessToken")
+            Log.d("ScheduleRepository", "getAllHabits response code=${response.code()} message=${response.message()}")
+            if (!response.isSuccessful) {
+                val err = try { response.errorBody()?.string() } catch (_: Exception) { null }
+                if (!err.isNullOrBlank()) {
+                    Log.d("ScheduleRepository", "getAllHabits errorBody=$err")
+                }
+            }
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to fetch habits: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Log.e("ScheduleRepository", "getAllHabits exception", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createCustomSchedule(scheduleDto: CreateCustomScheduleDto): Result<ScheduleResponseDto> = withContext(Dispatchers.IO) {
+        try {
+            val response = scheduleApiService.createCustomSchedule(scheduleDto)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to create schedule: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createHabit(accessToken: String, habit: CreateHabitDto): Result<HabitResponseDto> = withContext(Dispatchers.IO) {
+        try {
+            Log.d("ScheduleRepository", "Making post/habit...")
+            val response = scheduleApiService.createHabit("Bearer $accessToken", habit)
+            Log.d("ScheduleRepository", "createHabit response code=${response.code()} message=${response.message()}")
+            if (!response.isSuccessful) {
+                val err = try { response.errorBody()?.string() } catch (_: Exception) { null }
+                if (!err.isNullOrBlank()) {
+                    Log.d("ScheduleRepository", "createHabit errorBody=$err")
+                }
+            }
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to create habit: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Log.e("ScheduleRepository", "createHabit exception", e)
             Result.failure(e)
         }
     }

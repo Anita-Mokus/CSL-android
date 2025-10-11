@@ -76,9 +76,17 @@ class ScheduleRepository(private val scheduleApiService: ScheduleApiService) {
         }
     }
 
-    suspend fun createCustomSchedule(scheduleDto: CreateCustomScheduleDto): Result<ScheduleResponseDto> = withContext(Dispatchers.IO) {
+    suspend fun createCustomSchedule(accessToken: String, scheduleDto: CreateCustomScheduleDto): Result<ScheduleResponseDto> = withContext(Dispatchers.IO) {
         try {
-            val response = scheduleApiService.createCustomSchedule(scheduleDto)
+            Log.d("ScheduleRepository", "Making post/schedule/custom...")
+            val response = scheduleApiService.createCustomSchedule("Bearer $accessToken", scheduleDto)
+            Log.d("ScheduleRepository", "createCustomSchedule response code=${response.code()} message=${response.message()}")
+            if (!response.isSuccessful) {
+                val err = try { response.errorBody()?.string() } catch (_: Exception) { null }
+                if (!err.isNullOrBlank()) {
+                    Log.d("ScheduleRepository", "createCustomSchedule errorBody=$err")
+                }
+            }
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {

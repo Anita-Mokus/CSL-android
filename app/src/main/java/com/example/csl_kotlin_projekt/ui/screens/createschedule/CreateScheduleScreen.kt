@@ -1,5 +1,6 @@
 package com.example.csl_kotlin_projekt.ui.screens.createschedule
 
+import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -61,6 +62,12 @@ fun CreateScheduleScreen(
                 habits = uiState.habits,
                 selectedHabit = uiState.selectedHabit,
                 onHabitSelected = viewModel::onHabitSelected
+            )
+
+            // Date Picker (select any future date)
+            DatePickerField(
+                calendar = uiState.startTime,
+                onDateSelected = viewModel::onDateSelected
             )
 
             // Time Picker
@@ -153,6 +160,45 @@ fun HabitSelector(
 }
 
 @Composable
+fun DatePickerField(
+    calendar: Calendar,
+    onDateSelected: (Int, Int, Int) -> Unit
+) {
+    val context = LocalContext.current
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+
+    val year = calendar.get(Calendar.YEAR)
+    val month = calendar.get(Calendar.MONTH)
+    val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _, y, m, d -> onDateSelected(y, m, d) },
+        year,
+        month,
+        day
+    ).apply {
+        // Block selecting past dates
+        datePicker.minDate = Calendar.getInstance().timeInMillis
+    }
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = dateFormat.format(calendar.time),
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Date") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(
+            modifier = Modifier
+                .matchParentSize()
+                .clickable { datePickerDialog.show() }
+        )
+    }
+}
+
+@Composable
 fun TimePicker(
     calendar: Calendar,
     onTimeSelected: (Int, Int) -> Unit
@@ -168,13 +214,19 @@ fun TimePicker(
         true
     )
 
-    OutlinedTextField(
-        value = timeFormat.format(calendar.time),
-        onValueChange = {},
-        readOnly = true,
-        label = { Text("Start Time") },
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { timePickerDialog.show() }
-    )
+    Box(modifier = Modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = timeFormat.format(calendar.time),
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Start Time") },
+            modifier = Modifier
+                .fillMaxWidth()
+        )
+        Spacer(
+            modifier = Modifier
+                .matchParentSize()
+                .clickable { timePickerDialog.show() }
+        )
+    }
 }

@@ -94,8 +94,14 @@ data class CreateCustomScheduleDto(
     val date: String,
     @SerializedName("start_time")
     val startTime: String,
+    @SerializedName("is_custom")
+    val isCustom: Boolean = true,
+    @SerializedName("end_time")
+    val endTime: String? = null,
     @SerializedName("duration_minutes")
     val durationMinutes: Int?,
+    @SerializedName("participantIds")
+    val participantIds: List<Int>? = null,
     @SerializedName("notes")
     val notes: String?
 )

@@ -30,6 +30,7 @@ interface ScheduleApiService {
 
     @POST("schedule/custom")
     suspend fun createCustomSchedule(
+        @Header("Authorization") authorization: String,
         @Body schedule: CreateCustomScheduleDto
     ): Response<ScheduleResponseDto>
 

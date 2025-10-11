@@ -62,11 +62,22 @@ class CreateScheduleViewModel : ViewModel() {
     }
 
     fun onTimeSelected(hour: Int, minute: Int) {
-        val newTime = _uiState.value.startTime.apply {
+        val current = _uiState.value.startTime
+        val newCal = (current.clone() as Calendar).apply {
             set(Calendar.HOUR_OF_DAY, hour)
             set(Calendar.MINUTE, minute)
         }
-        _uiState.value = _uiState.value.copy(startTime = newTime)
+        _uiState.value = _uiState.value.copy(startTime = newCal)
+    }
+
+    fun onDateSelected(year: Int, month: Int, day: Int) {
+        val current = _uiState.value.startTime
+        val newCal = (current.clone() as Calendar).apply {
+            set(Calendar.YEAR, year)
+            set(Calendar.MONTH, month)
+            set(Calendar.DAY_OF_MONTH, day)
+        }
+        _uiState.value = _uiState.value.copy(startTime = newCal)
     }
 
     fun onDurationChanged(duration: String) {
@@ -86,18 +97,27 @@ class CreateScheduleViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
             val scheduleRepository = ScheduleRepository(NetworkModule.createScheduleApiService(context))
+            val authRepository = createAuthRepository(context)
+            val token = authRepository.getAccessToken()
+            if (token.isNullOrBlank()) {
+                _uiState.value = _uiState.value.copy(isLoading = false, error = "You must be logged in to create a schedule.")
+                return@launch
+            }
+
             val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
-            val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
             val scheduleDto = CreateCustomScheduleDto(
                 habitId = _uiState.value.selectedHabit!!.id,
                 date = dateFormat.format(_uiState.value.startTime.time),
                 startTime = dateFormat.format(_uiState.value.startTime.time),
+                // isCustom defaults to true
+                endTime = null,
                 durationMinutes = _uiState.value.durationMinutes.toIntOrNull(),
+                participantIds = null,
                 notes = _uiState.value.notes.takeIf { it.isNotBlank() }
             )
 
-            val result = scheduleRepository.createCustomSchedule(scheduleDto)
+            val result = scheduleRepository.createCustomSchedule(token, scheduleDto)
             if (result.isSuccess) {
                 _uiState.value = _uiState.value.copy(isLoading = false, isScheduleCreated = true)
             } else {

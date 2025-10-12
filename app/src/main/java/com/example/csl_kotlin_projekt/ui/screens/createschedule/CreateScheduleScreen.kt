@@ -27,6 +27,7 @@ import androidx.compose.foundation.verticalScroll
 @Composable
 fun CreateScheduleScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToAddHabit: () -> Unit,
     viewModel: CreateScheduleViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -64,12 +65,23 @@ fun CreateScheduleScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Habit Selector
+            // Habit Selector + Create new habit
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(text = "Habit", style = MaterialTheme.typography.titleSmall)
+                TextButton(onClick = onNavigateToAddHabit) { Text("Create new habit") }
+            }
             HabitSelector(
                 habits = uiState.habits,
                 selectedHabit = uiState.selectedHabit,
                 onHabitSelected = viewModel::onHabitSelected
             )
+            if (uiState.habitError != null) {
+                Text(uiState.habitError!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.align(Alignment.Start))
+            }
 
             // Date Picker (select any future date)
             DatePickerField(
@@ -83,11 +95,15 @@ fun CreateScheduleScreen(
                 onTimeSelected = viewModel::onTimeSelected
             )
 
-            // Duration Input
+            // Duration Input with inline error
             OutlinedTextField(
                 value = uiState.durationMinutes,
                 onValueChange = viewModel::onDurationChanged,
                 label = { Text("Duration (minutes, optional)") },
+                isError = uiState.durationError != null,
+                supportingText = {
+                    if (uiState.durationError != null) Text(uiState.durationError!!)
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -111,6 +127,10 @@ fun CreateScheduleScreen(
                     readOnly = true,
                     label = { Text("Repeat pattern") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = rpExpanded) },
+                    isError = uiState.repeatPatternError != null,
+                    supportingText = {
+                        if (uiState.repeatPatternError != null) Text(uiState.repeatPatternError!!)
+                    },
                     modifier = Modifier
                         .menuAnchor()
                         .fillMaxWidth()
@@ -152,6 +172,9 @@ fun CreateScheduleScreen(
                         )
                     }
                 }
+                if (uiState.weekdaysError != null) {
+                    Text(uiState.weekdaysError!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.align(Alignment.Start))
+                }
                 OutlinedTextField(
                     value = uiState.numberOfWeeks,
                     onValueChange = viewModel::onNumberOfWeeksChanged,
@@ -161,7 +184,7 @@ fun CreateScheduleScreen(
                 )
             }
 
-            // Error Message
+            // Error Message (API/general)
             if (uiState.error != null) {
                 Text(
                     text = uiState.error!!,

@@ -29,8 +29,15 @@ data class CreateScheduleUiState(
     val daysOfWeek: Set<Int> = emptySet(), // 1..7
     val numberOfWeeks: String = "4",
 
-    val isLoading: Boolean = false,
+    // Field-level errors
+    val habitError: String? = null,
+    val durationError: String? = null,
+    val repeatPatternError: String? = null,
+    val weekdaysError: String? = null,
+
+    // API/general error
     val error: String? = null,
+    val isLoading: Boolean = false,
     val isScheduleCreated: Boolean = false
 )
 
@@ -66,7 +73,7 @@ class CreateScheduleViewModel : ViewModel() {
     }
 
     fun onHabitSelected(habit: HabitResponseDto) {
-        _uiState.value = _uiState.value.copy(selectedHabit = habit)
+        _uiState.value = _uiState.value.copy(selectedHabit = habit, habitError = null, error = null)
     }
 
     fun onTimeSelected(hour: Int, minute: Int) {
@@ -88,16 +95,23 @@ class CreateScheduleViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(startTime = newCal)
     }
 
-    fun onDurationChanged(duration: String) { _uiState.value = _uiState.value.copy(durationMinutes = duration) }
-    fun onNotesChanged(notes: String) { _uiState.value = _uiState.value.copy(notes = notes) }
+    fun onDurationChanged(duration: String) {
+        val err = duration.takeIf { it.isNotBlank() }?.toIntOrNull()?.let { if (it <= 0) "Duration must be a positive number" else null } ?: run {
+            // Blank is allowed (optional); no error
+            null
+        } ?: if (duration.isNotBlank() && duration.toIntOrNull() == null) "Duration must be a number" else null
+        _uiState.value = _uiState.value.copy(durationMinutes = duration, durationError = err, error = null)
+    }
+    fun onNotesChanged(notes: String) { _uiState.value = _uiState.value.copy(notes = notes, error = null) }
 
-    fun onRepeatPatternChanged(pattern: String) { _uiState.value = _uiState.value.copy(repeatPattern = pattern) }
-    fun onRepeatDaysChanged(days: String) { _uiState.value = _uiState.value.copy(repeatDays = days) }
+    fun onRepeatPatternChanged(pattern: String) { _uiState.value = _uiState.value.copy(repeatPattern = pattern, repeatPatternError = null, error = null) }
+    fun onRepeatDaysChanged(days: String) { _uiState.value = _uiState.value.copy(repeatDays = days, error = null) }
     fun onToggleDayOfWeek(d: Int) {
         val current = _uiState.value.daysOfWeek
-        _uiState.value = _uiState.value.copy(daysOfWeek = if (current.contains(d)) current - d else current + d)
+        val next = if (current.contains(d)) current - d else current + d
+        _uiState.value = _uiState.value.copy(daysOfWeek = next, weekdaysError = null, error = null)
     }
-    fun onNumberOfWeeksChanged(weeks: String) { _uiState.value = _uiState.value.copy(numberOfWeeks = weeks) }
+    fun onNumberOfWeeksChanged(weeks: String) { _uiState.value = _uiState.value.copy(numberOfWeeks = weeks, error = null) }
 
     private fun buildStartIso(): String {
         val df = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.getDefault()).apply {
@@ -107,12 +121,19 @@ class CreateScheduleViewModel : ViewModel() {
     }
 
     fun createSchedule(context: android.content.Context) {
-        if (_uiState.value.selectedHabit == null) {
-            _uiState.value = _uiState.value.copy(error = "Please select a habit")
+        val s = _uiState.value
+        // Field checks
+        if (s.selectedHabit == null) {
+            _uiState.value = s.copy(habitError = "Please select a habit", error = null)
             return
         }
+        if (!s.durationMinutes.isBlank()) {
+            val num = s.durationMinutes.toIntOrNull()
+            if (num == null) { _uiState.value = s.copy(durationError = "Duration must be a number", error = null); return }
+            if (num <= 0) { _uiState.value = s.copy(durationError = "Duration must be a positive number", error = null); return }
+        }
 
-        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+        _uiState.value = s.copy(isLoading = true, error = null)
         viewModelScope.launch {
             val scheduleRepository = ScheduleRepository(NetworkModule.createScheduleApiService(context))
             val authRepository = createAuthRepository(context)
@@ -126,13 +147,13 @@ class CreateScheduleViewModel : ViewModel() {
             Log.d("CreateScheduleVM", "Creating schedule at local ISO time=$startIso tz=${TimeZone.getDefault().id}")
 
             val scheduleDto = CreateCustomScheduleDto(
-                habitId = _uiState.value.selectedHabit!!.id,
+                habitId = s.selectedHabit.id,
                 date = startIso,
                 startTime = startIso,
                 endTime = null,
-                durationMinutes = _uiState.value.durationMinutes.toIntOrNull(),
+                durationMinutes = s.durationMinutes.toIntOrNull(),
                 participantIds = null,
-                notes = _uiState.value.notes.takeIf { it.isNotBlank() }
+                notes = s.notes.takeIf { it.isNotBlank() }
             )
 
             val result = scheduleRepository.createCustomSchedule(token, scheduleDto)
@@ -146,8 +167,13 @@ class CreateScheduleViewModel : ViewModel() {
 
     fun createRecurringSchedule(context: android.content.Context) {
         val s = _uiState.value
-        if (s.selectedHabit == null) { _uiState.value = s.copy(error = "Please select a habit"); return }
-        if (s.repeatPattern == "none") { _uiState.value = s.copy(error = "Select a repeat pattern other than 'none'"); return }
+        if (s.selectedHabit == null) { _uiState.value = s.copy(habitError = "Please select a habit", error = null); return }
+        if (s.repeatPattern == "none") { _uiState.value = s.copy(repeatPatternError = "Please choose a repeat pattern", error = null); return }
+        if (!s.durationMinutes.isBlank()) {
+            val num = s.durationMinutes.toIntOrNull()
+            if (num == null) { _uiState.value = s.copy(durationError = "Duration must be a number", error = null); return }
+            if (num <= 0) { _uiState.value = s.copy(durationError = "Duration must be a positive number", error = null); return }
+        }
 
         _uiState.value = s.copy(isLoading = true, error = null)
         viewModelScope.launch {
@@ -179,8 +205,13 @@ class CreateScheduleViewModel : ViewModel() {
 
     fun createWeekdayRecurringSchedule(context: android.content.Context) {
         val s = _uiState.value
-        if (s.selectedHabit == null) { _uiState.value = s.copy(error = "Please select a habit"); return }
-        if (s.daysOfWeek.isEmpty()) { _uiState.value = s.copy(error = "Select at least one weekday"); return }
+        if (s.selectedHabit == null) { _uiState.value = s.copy(habitError = "Please select a habit", error = null); return }
+        if (s.daysOfWeek.isEmpty()) { _uiState.value = s.copy(weekdaysError = "Select at least one weekday", error = null); return }
+        if (!s.durationMinutes.isBlank()) {
+            val num = s.durationMinutes.toIntOrNull()
+            if (num == null) { _uiState.value = s.copy(durationError = "Duration must be a number", error = null); return }
+            if (num <= 0) { _uiState.value = s.copy(durationError = "Duration must be a positive number", error = null); return }
+        }
 
         _uiState.value = s.copy(isLoading = true, error = null)
         viewModelScope.launch {

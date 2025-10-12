@@ -68,7 +68,8 @@ fun AppNavigation(
         }
         composable("add_schedule") {
             CreateScheduleScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAddHabit = { navController.navigate("add_habit") }
             )
         }
         composable("add_habit") {

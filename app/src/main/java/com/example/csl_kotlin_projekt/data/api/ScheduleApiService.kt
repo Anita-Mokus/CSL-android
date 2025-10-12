@@ -7,6 +7,8 @@ import com.example.csl_kotlin_projekt.data.models.CreateHabitDto
 import com.example.csl_kotlin_projekt.data.models.HabitCategory
 import com.example.csl_kotlin_projekt.data.models.CreateRecurringScheduleDto
 import com.example.csl_kotlin_projekt.data.models.CreateWeekdayRecurringScheduleDto
+import com.example.csl_kotlin_projekt.data.models.CreateProgressDto
+import com.example.csl_kotlin_projekt.data.models.ProgressResponseDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -53,6 +55,12 @@ interface ScheduleApiService {
         @Header("Authorization") authorization: String,
         @Body dto: CreateWeekdayRecurringScheduleDto
     ): Response<List<ScheduleResponseDto>>
+
+    @POST("progress")
+    suspend fun createProgress(
+        @Header("Authorization") authorization: String,
+        @Body dto: CreateProgressDto
+    ): Response<ProgressResponseDto>
 
     @POST("habit")
     suspend fun createHabit(

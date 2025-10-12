@@ -139,3 +139,11 @@ data class CreateHabitDto(
     @SerializedName("goal")
     val goal: String
 )
+
+data class CreateProgressDto(
+    @SerializedName("scheduleId") val scheduleId: Int,
+    @SerializedName("date") val date: String,
+    @SerializedName("logged_time") val loggedTime: Int? = null,
+    @SerializedName("notes") val notes: String? = null,
+    @SerializedName("is_completed") val isCompleted: Boolean? = null
+)

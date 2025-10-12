@@ -60,6 +60,53 @@ fun HomeScreen(
         }
     }
 
+    // Progress dialog
+    if (uiState.showProgressDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!uiState.progressSubmitting) viewModel.closeProgressDialog() },
+            title = { Text("Add Progress") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = uiState.progressLoggedTime,
+                        onValueChange = viewModel::updateProgressLoggedTime,
+                        label = { Text("Logged time (minutes, optional)") },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = uiState.progressNotes,
+                        onValueChange = viewModel::updateProgressNotes,
+                        label = { Text("Notes (optional)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = uiState.progressCompleted, onCheckedChange = { viewModel.toggleProgressCompleted() })
+                        Spacer(Modifier.width(8.dp))
+                        Text("Mark as completed")
+                    }
+                    if (uiState.progressError != null) {
+                        Text(uiState.progressError!!, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.submitProgress(context) }, enabled = !uiState.progressSubmitting) {
+                    if (uiState.progressSubmitting) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                    } else {
+                        Text("Save")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.closeProgressDialog() }, enabled = !uiState.progressSubmitting) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -148,7 +195,13 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(uiState.schedule) { schedule ->
-                    ScheduleItem(schedule = schedule)
+                    ScheduleItem(
+                        schedule = schedule,
+                        onLogProgress = { viewModel.openProgressDialog(schedule.id) },
+                        onToggleCompleted = { checked -> viewModel.toggleScheduleCompleted(context, schedule.id, checked) },
+                        isToggling = uiState.togglingScheduleIds.contains(schedule.id),
+                        desiredCompleted = uiState.togglingDesired[schedule.id]
+                    )
                 }
             }
         }
@@ -156,7 +209,25 @@ fun HomeScreen(
 }
 
 @Composable
-fun ScheduleItem(schedule: com.example.csl_kotlin_projekt.data.models.ScheduleResponseDto) {
+fun ScheduleItem(
+    schedule: com.example.csl_kotlin_projekt.data.models.ScheduleResponseDto,
+    onLogProgress: () -> Unit,
+    onToggleCompleted: (Boolean) -> Unit,
+    isToggling: Boolean,
+    desiredCompleted: Boolean?
+) {
+    val totalLogged = remember(schedule.progress) {
+        schedule.progress?.sumOf { it.loggedTime ?: 0 } ?: 0
+    }
+    val goalMinutes = schedule.durationMinutes
+
+    // Determine completion based on latest progress entry if present; otherwise fall back to server status
+    val latestProgressCompleted = remember(schedule.progress) {
+        schedule.progress?.maxByOrNull { it.createdAt }?.isCompleted
+    }
+    val derivedCompleted = latestProgressCompleted ?: (schedule.status == com.example.csl_kotlin_projekt.data.models.ScheduleStatus.Completed)
+    val effectiveCompleted = desiredCompleted ?: derivedCompleted
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -169,8 +240,9 @@ fun ScheduleItem(schedule: com.example.csl_kotlin_projekt.data.models.ScheduleRe
         ) {
             // Status Indicator
             Checkbox(
-                checked = schedule.status == com.example.csl_kotlin_projekt.data.models.ScheduleStatus.Completed,
-                onCheckedChange = { /* TODO: Handle status change */ },
+                checked = effectiveCompleted,
+                onCheckedChange = { onToggleCompleted(it) },
+                enabled = !isToggling,
                 modifier = Modifier.size(24.dp)
             )
 
@@ -188,9 +260,23 @@ fun ScheduleItem(schedule: com.example.csl_kotlin_projekt.data.models.ScheduleRe
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                // Progress display
+                val progressText = if (goalMinutes != null) {
+                    "Progress: $totalLogged / $goalMinutes min"
+                } else {
+                    "Progress: $totalLogged min"
+                }
+                Text(
+                    text = progressText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            // More Options Icon
+            TextButton(onClick = onLogProgress) {
+                Text("Log Progress")
+            }
+
             IconButton(onClick = { /* TODO: Handle more options */ }) {
                 Icon(Icons.Default.MoreVert, contentDescription = "More Options")
             }

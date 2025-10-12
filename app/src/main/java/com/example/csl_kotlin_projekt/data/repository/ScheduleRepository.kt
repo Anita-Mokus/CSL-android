@@ -2,13 +2,7 @@ package com.example.csl_kotlin_projekt.data.repository
 
 import android.util.Log
 import com.example.csl_kotlin_projekt.data.api.ScheduleApiService
-import com.example.csl_kotlin_projekt.data.models.ScheduleResponseDto
-import com.example.csl_kotlin_projekt.data.models.HabitResponseDto
-import com.example.csl_kotlin_projekt.data.models.CreateCustomScheduleDto
-import com.example.csl_kotlin_projekt.data.models.CreateHabitDto
-import com.example.csl_kotlin_projekt.data.models.HabitCategory
-import com.example.csl_kotlin_projekt.data.models.CreateRecurringScheduleDto
-import com.example.csl_kotlin_projekt.data.models.CreateWeekdayRecurringScheduleDto
+import com.example.csl_kotlin_projekt.data.models.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -230,6 +224,27 @@ class ScheduleRepository(private val scheduleApiService: ScheduleApiService) {
                 Result.success(response.body()!!)
             } else {
                 Result.failure(Exception("Failed to create weekday recurring schedules: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createProgress(accessToken: String, dto: CreateProgressDto): Result<ProgressResponseDto> = withContext(Dispatchers.IO) {
+        try {
+            Log.d("ScheduleRepository", "Making post/progress...")
+            val response = scheduleApiService.createProgress("Bearer $accessToken", dto)
+            Log.d("ScheduleRepository", "createProgress response code=${response.code()} message=${response.message()}")
+            if (!response.isSuccessful) {
+                val err = try { response.errorBody()?.string() } catch (_: Exception) { null }
+                if (!err.isNullOrBlank()) {
+                    Log.d("ScheduleRepository", "createProgress errorBody=$err")
+                }
+            }
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to create progress: ${response.message()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

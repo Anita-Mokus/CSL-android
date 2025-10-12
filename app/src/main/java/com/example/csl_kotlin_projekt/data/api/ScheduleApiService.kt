@@ -5,6 +5,8 @@ import com.example.csl_kotlin_projekt.data.models.HabitResponseDto
 import com.example.csl_kotlin_projekt.data.models.CreateCustomScheduleDto
 import com.example.csl_kotlin_projekt.data.models.CreateHabitDto
 import com.example.csl_kotlin_projekt.data.models.HabitCategory
+import com.example.csl_kotlin_projekt.data.models.CreateRecurringScheduleDto
+import com.example.csl_kotlin_projekt.data.models.CreateWeekdayRecurringScheduleDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -39,6 +41,18 @@ interface ScheduleApiService {
         @Header("Authorization") authorization: String,
         @Body schedule: CreateCustomScheduleDto
     ): Response<ScheduleResponseDto>
+
+    @POST("schedule/recurring")
+    suspend fun createRecurringSchedule(
+        @Header("Authorization") authorization: String,
+        @Body dto: CreateRecurringScheduleDto
+    ): Response<List<ScheduleResponseDto>>
+
+    @POST("schedule/recurring/weekdays")
+    suspend fun createWeekdayRecurringSchedule(
+        @Header("Authorization") authorization: String,
+        @Body dto: CreateWeekdayRecurringScheduleDto
+    ): Response<List<ScheduleResponseDto>>
 
     @POST("habit")
     suspend fun createHabit(

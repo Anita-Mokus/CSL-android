@@ -4,6 +4,9 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -17,8 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CreateScheduleScreen(
     onNavigateBack: () -> Unit,
@@ -53,7 +58,9 @@ fun CreateScheduleScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+                .imePadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -93,6 +100,67 @@ fun CreateScheduleScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // Recurring options
+            Text("Recurring options", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.Start))
+            var rpExpanded by remember { mutableStateOf(false) }
+            val patterns = listOf("none", "daily", "weekdays", "weekends")
+            ExposedDropdownMenuBox(expanded = rpExpanded, onExpandedChange = { rpExpanded = !rpExpanded }) {
+                OutlinedTextField(
+                    value = uiState.repeatPattern,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Repeat pattern") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = rpExpanded) },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
+                )
+                ExposedDropdownMenu(expanded = rpExpanded, onDismissRequest = { rpExpanded = false }) {
+                    patterns.forEach { p ->
+                        DropdownMenuItem(text = { Text(p) }, onClick = {
+                            viewModel.onRepeatPatternChanged(p)
+                            rpExpanded = false
+                        })
+                    }
+                }
+            }
+
+            if (uiState.repeatPattern != "none" && uiState.repeatPattern != "weekdays") {
+                OutlinedTextField(
+                    value = uiState.repeatDays,
+                    onValueChange = viewModel::onRepeatDaysChanged,
+                    label = { Text("Repeat days (default 30)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            if (uiState.repeatPattern == "weekdays") {
+                Text("Select weekdays", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.align(Alignment.Start))
+                val days = listOf(
+                    "Mon" to 1, "Tue" to 2, "Wed" to 3, "Thu" to 4, "Fri" to 5, "Sat" to 6, "Sun" to 7
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    days.forEach { (label, num) ->
+                        FilterChip(
+                            selected = uiState.daysOfWeek.contains(num),
+                            onClick = { viewModel.onToggleDayOfWeek(num) },
+                            label = { Text(label) }
+                        )
+                    }
+                }
+                OutlinedTextField(
+                    value = uiState.numberOfWeeks,
+                    onValueChange = viewModel::onNumberOfWeeksChanged,
+                    label = { Text("Number of weeks (default 4)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
             // Error Message
             if (uiState.error != null) {
                 Text(
@@ -102,7 +170,7 @@ fun CreateScheduleScreen(
                 )
             }
 
-            // Create Button
+            // Create Buttons
             Button(
                 onClick = { viewModel.createSchedule(context) },
                 enabled = !uiState.isLoading,
@@ -113,6 +181,22 @@ fun CreateScheduleScreen(
                 } else {
                     Text("Create Schedule")
                 }
+            }
+
+            Button(
+                onClick = { viewModel.createRecurringSchedule(context) },
+                enabled = !uiState.isLoading && uiState.repeatPattern != "none",
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Create Recurring (pattern)")
+            }
+
+            Button(
+                onClick = { viewModel.createWeekdayRecurringSchedule(context) },
+                enabled = !uiState.isLoading && uiState.daysOfWeek.isNotEmpty(),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Create Weekday Recurring")
             }
         }
     }

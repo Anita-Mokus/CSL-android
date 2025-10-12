@@ -106,6 +106,29 @@ data class CreateCustomScheduleDto(
     val notes: String?
 )
 
+data class CreateRecurringScheduleDto(
+    @SerializedName("habitId") val habitId: Int,
+    @SerializedName("start_time") val startTime: String,
+    @SerializedName("repeatPattern") val repeatPattern: String = "none", // none|daily|weekdays|weekends
+    @SerializedName("is_custom") val isCustom: Boolean = true,
+    @SerializedName("end_time") val endTime: String? = null,
+    @SerializedName("duration_minutes") val durationMinutes: Int?,
+    @SerializedName("repeatDays") val repeatDays: Int? = null,
+    @SerializedName("participantIds") val participantIds: List<Int>? = null,
+    @SerializedName("notes") val notes: String? = null
+)
+
+data class CreateWeekdayRecurringScheduleDto(
+    @SerializedName("habitId") val habitId: Int,
+    @SerializedName("start_time") val startTime: String,
+    @SerializedName("daysOfWeek") val daysOfWeek: List<Int>, // 1=Mon ... 7=Sun
+    @SerializedName("numberOfWeeks") val numberOfWeeks: Int = 4,
+    @SerializedName("duration_minutes") val durationMinutes: Int?,
+    @SerializedName("end_time") val endTime: String? = null,
+    @SerializedName("participantIds") val participantIds: List<Int>? = null,
+    @SerializedName("notes") val notes: String? = null
+)
+
 data class CreateHabitDto(
     @SerializedName("name")
     val name: String,

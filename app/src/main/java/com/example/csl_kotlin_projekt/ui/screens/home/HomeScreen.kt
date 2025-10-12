@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +30,7 @@ fun HomeScreen(
     onNavigateToLogin: () -> Unit,
     onNavigateToAddSchedule: () -> Unit,
     onNavigateToAddHabit: () -> Unit = {},
+    onNavigateToScheduleDetails: (Int) -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -200,7 +202,8 @@ fun HomeScreen(
                         onLogProgress = { viewModel.openProgressDialog(schedule.id) },
                         onToggleCompleted = { checked -> viewModel.toggleScheduleCompleted(context, schedule.id, checked) },
                         isToggling = uiState.togglingScheduleIds.contains(schedule.id),
-                        desiredCompleted = uiState.togglingDesired[schedule.id]
+                        desiredCompleted = uiState.togglingDesired[schedule.id],
+                        onOpenDetails = { onNavigateToScheduleDetails(schedule.id) }
                     )
                 }
             }
@@ -214,7 +217,8 @@ fun ScheduleItem(
     onLogProgress: () -> Unit,
     onToggleCompleted: (Boolean) -> Unit,
     isToggling: Boolean,
-    desiredCompleted: Boolean?
+    desiredCompleted: Boolean?,
+    onOpenDetails: () -> Unit
 ) {
     val totalLogged = remember(schedule.progress) {
         schedule.progress?.sumOf { it.loggedTime ?: 0 } ?: 0
@@ -229,7 +233,9 @@ fun ScheduleItem(
     val effectiveCompleted = desiredCompleted ?: derivedCompleted
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpenDetails() },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(

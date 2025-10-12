@@ -250,4 +250,25 @@ class ScheduleRepository(private val scheduleApiService: ScheduleApiService) {
             Result.failure(e)
         }
     }
+
+    suspend fun getScheduleById(accessToken: String, id: Int): Result<ScheduleResponseDto> = withContext(Dispatchers.IO) {
+        try {
+            Log.d("ScheduleRepository", "Making get/schedule/$id...")
+            val response = scheduleApiService.getScheduleById("Bearer $accessToken", id)
+            Log.d("ScheduleRepository", "getScheduleById response code=${response.code()} message=${response.message()}")
+            if (!response.isSuccessful) {
+                val err = try { response.errorBody()?.string() } catch (_: Exception) { null }
+                if (!err.isNullOrBlank()) {
+                    Log.d("ScheduleRepository", "getScheduleById errorBody=$err")
+                }
+            }
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to fetch schedule: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

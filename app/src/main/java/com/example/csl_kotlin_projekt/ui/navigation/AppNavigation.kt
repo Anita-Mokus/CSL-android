@@ -16,6 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.csl_kotlin_projekt.ui.screens.createschedule.CreateScheduleScreen
 import com.example.csl_kotlin_projekt.ui.screens.addhabit.AddHabitScreen
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.example.csl_kotlin_projekt.ui.screens.scheduledetails.ScheduleDetailsScreen
 
 @Composable
 fun AppNavigation(
@@ -89,7 +92,20 @@ fun AppNavigation(
                 },
                 onNavigateToAddHabit = {
                     navController.navigate("add_habit")
+                },
+                onNavigateToScheduleDetails = { id ->
+                    navController.navigate("schedule_details/$id")
                 }
+            )
+        }
+        composable(
+            route = "schedule_details/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getInt("id") ?: 0
+            ScheduleDetailsScreen(
+                scheduleId = id,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

@@ -104,12 +104,17 @@ class CreateScheduleViewModel : ViewModel() {
                 return@launch
             }
 
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+            // Use ISO-8601 with timezone offset to avoid day boundary issues
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.getDefault()).apply {
+                timeZone = TimeZone.getDefault()
+            }
+            val startIso = dateFormat.format(_uiState.value.startTime.time)
+            Log.d("CreateScheduleVM", "Creating schedule at local ISO time=$startIso tz=${dateFormat.timeZone.id}")
 
             val scheduleDto = CreateCustomScheduleDto(
                 habitId = _uiState.value.selectedHabit!!.id,
-                date = dateFormat.format(_uiState.value.startTime.time),
-                startTime = dateFormat.format(_uiState.value.startTime.time),
+                date = startIso,
+                startTime = startIso,
                 // isCustom defaults to true
                 endTime = null,
                 durationMinutes = _uiState.value.durationMinutes.toIntOrNull(),

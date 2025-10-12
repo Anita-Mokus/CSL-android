@@ -15,7 +15,13 @@ import retrofit2.http.Query
 interface ScheduleApiService {
     @GET("schedule/day")
     suspend fun getSchedulesByDay(
+        @Header("Authorization") authorization: String,
         @Query("date") date: String?
+    ): Response<List<ScheduleResponseDto>>
+
+    @GET("schedule")
+    suspend fun getAllSchedules(
+        @Header("Authorization") authorization: String
     ): Response<List<ScheduleResponseDto>>
 
     @GET("habit")

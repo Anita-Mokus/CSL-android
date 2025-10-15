@@ -18,7 +18,11 @@ data class ScheduleDetailsUiState(
     val schedule: ScheduleResponseDto? = null,
     val editingNotes: Boolean = false,
     val notesDraft: String = "",
-    val savingNotes: Boolean = false
+    val savingNotes: Boolean = false,
+    // Delete flow
+    val showDeleteConfirm: Boolean = false,
+    val deleting: Boolean = false,
+    val deleted: Boolean = false
 )
 
 class ScheduleDetailsViewModel : ViewModel() {
@@ -88,6 +92,36 @@ class ScheduleDetailsViewModel : ViewModel() {
                     savingNotes = false,
                     error = result.exceptionOrNull()?.message ?: "Failed to update notes"
                 )
+            }
+        }
+    }
+
+    fun openDeleteConfirm() {
+        _uiState.value = _uiState.value.copy(showDeleteConfirm = true, error = null)
+    }
+
+    fun cancelDelete() {
+        _uiState.value = _uiState.value.copy(showDeleteConfirm = false)
+    }
+
+    fun confirmDelete(context: android.content.Context) {
+        val s = _uiState.value.schedule ?: run {
+            _uiState.value = _uiState.value.copy(error = "No schedule loaded")
+            return
+        }
+        _uiState.value = _uiState.value.copy(deleting = true, showDeleteConfirm = false, error = null)
+        viewModelScope.launch {
+            val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
+            val token = createAuthRepository(context).getAccessToken()
+            if (token.isNullOrBlank()) {
+                _uiState.value = _uiState.value.copy(deleting = false, error = "You must be logged in.")
+                return@launch
+            }
+            val result = repo.deleteSchedule(token, s.id)
+            if (result.isSuccess) {
+                _uiState.value = _uiState.value.copy(deleting = false, deleted = true)
+            } else {
+                _uiState.value = _uiState.value.copy(deleting = false, error = result.exceptionOrNull()?.message ?: "Failed to delete schedule")
             }
         }
     }

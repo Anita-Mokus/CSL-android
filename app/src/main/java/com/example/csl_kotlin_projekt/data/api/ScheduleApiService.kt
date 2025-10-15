@@ -18,6 +18,7 @@ import retrofit2.http.POST
 import retrofit2.http.Query
 import retrofit2.http.Path
 import retrofit2.http.PATCH
+import retrofit2.http.DELETE
 
 interface ScheduleApiService {
     @GET("schedule/day")
@@ -83,4 +84,10 @@ interface ScheduleApiService {
         @Path("id") id: Int,
         @Body dto: UpdateScheduleDto
     ): Response<ScheduleResponseDto>
+
+    @DELETE("schedule/{id}")
+    suspend fun deleteSchedule(
+        @Header("Authorization") authorization: String,
+        @Path("id") id: Int
+    ): Response<Unit>
 }

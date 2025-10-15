@@ -24,13 +24,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -66,10 +72,42 @@ fun ScheduleDetailsScreen(
                     IconButton(onClick = { onNavigateToEdit(scheduleId) }) {
                         Icon(Icons.Filled.Edit, contentDescription = "Edit")
                     }
+                    var menuOpen = remember { mutableStateOf(false) }
+                    IconButton(onClick = { menuOpen.value = true }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "More")
+                    }
+                    DropdownMenu(expanded = menuOpen.value, onDismissRequest = { menuOpen.value = false }) {
+                        DropdownMenuItem(text = { Text("Delete") }, onClick = {
+                            menuOpen.value = false
+                            viewModel.openDeleteConfirm()
+                        })
+                    }
                 }
             )
         }
     ) { paddingValues ->
+        // Navigate back when deleted
+        LaunchedEffect(uiState.deleted) {
+            if (uiState.deleted) onNavigateBack()
+        }
+
+        // Delete confirmation dialog
+        if (uiState.showDeleteConfirm) {
+            AlertDialog(
+                onDismissRequest = { viewModel.cancelDelete() },
+                title = { Text("Delete schedule") },
+                text = { Text("Are you sure?") },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.confirmDelete(context) }, enabled = !uiState.deleting) {
+                        Text(if (uiState.deleting) "Deleting..." else "Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.cancelDelete() }, enabled = !uiState.deleting) { Text("Cancel") }
+                }
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()

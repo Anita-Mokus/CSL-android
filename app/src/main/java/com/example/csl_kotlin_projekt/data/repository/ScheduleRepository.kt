@@ -299,4 +299,27 @@ class ScheduleRepository(private val scheduleApiService: ScheduleApiService) {
             Result.failure(e)
         }
     }
+
+    suspend fun deleteSchedule(accessToken: String, id: Int): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            Log.d("ScheduleRepository", "Making delete/schedule/$id...")
+            val response = scheduleApiService.deleteSchedule("Bearer $accessToken", id)
+            Log.d("ScheduleRepository", "deleteSchedule response code=${response.code()} message=${response.message()}")
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val err = try { response.errorBody()?.string() } catch (_: Exception) { null }
+                if (!err.isNullOrBlank()) Log.d("ScheduleRepository", "deleteSchedule errorBody=$err")
+                val msg = buildString {
+                    append("Failed to delete schedule: ")
+                    append(response.code())
+                    response.message()?.takeIf { it.isNotBlank() }?.let { append(" ").append(it) }
+                    if (!err.isNullOrBlank()) append(" - ").append(err)
+                }
+                Result.failure(Exception(msg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

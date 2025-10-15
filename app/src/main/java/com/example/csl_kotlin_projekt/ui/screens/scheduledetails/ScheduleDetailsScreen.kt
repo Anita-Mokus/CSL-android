@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,6 +40,7 @@ import java.util.Locale
 fun ScheduleDetailsScreen(
     scheduleId: Int,
     onNavigateBack: () -> Unit,
+    onNavigateToEdit: (Int) -> Unit = {},
     viewModel: ScheduleDetailsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val context = LocalContext.current
@@ -55,6 +57,11 @@ fun ScheduleDetailsScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { onNavigateToEdit(scheduleId) }) {
+                        Icon(Icons.Filled.Edit, contentDescription = "Edit")
                     }
                 }
             )

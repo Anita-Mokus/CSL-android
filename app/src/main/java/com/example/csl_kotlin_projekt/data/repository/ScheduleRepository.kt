@@ -271,4 +271,32 @@ class ScheduleRepository(private val scheduleApiService: ScheduleApiService) {
             Result.failure(e)
         }
     }
+
+    suspend fun updateSchedule(accessToken: String, id: Int, dto: UpdateScheduleDto): Result<ScheduleResponseDto> = withContext(Dispatchers.IO) {
+        try {
+            Log.d("ScheduleRepository", "Making patch/schedule/$id... body=$dto")
+            val response = scheduleApiService.updateSchedule("Bearer $accessToken", id, dto)
+            Log.d("ScheduleRepository", "updateSchedule response code=${response.code()} message=${response.message()}")
+            if (!response.isSuccessful) {
+                val err = try { response.errorBody()?.string() } catch (_: Exception) { null }
+                if (!err.isNullOrBlank()) {
+                    Log.d("ScheduleRepository", "updateSchedule errorBody=$err")
+                }
+                val msg = buildString {
+                    append("Failed to update schedule: ")
+                    append(response.code())
+                    response.message()?.takeIf { it.isNotBlank() }?.let { append(" ").append(it) }
+                    if (!err.isNullOrBlank()) append(" - ").append(err)
+                }
+                return@withContext Result.failure(Exception(msg))
+            }
+            if (response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to update schedule: empty body"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

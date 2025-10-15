@@ -147,3 +147,14 @@ data class CreateProgressDto(
     @SerializedName("notes") val notes: String? = null,
     @SerializedName("is_completed") val isCompleted: Boolean? = null
 )
+
+data class UpdateScheduleDto(
+    @SerializedName("start_time") val startTime: String? = null,
+    @SerializedName("end_time") val endTime: String? = null,
+    @SerializedName("duration_minutes") val durationMinutes: Int? = null,
+    @SerializedName("status") val status: ScheduleStatus? = null,
+    @SerializedName("date") val date: String? = null,
+    @SerializedName("is_custom") val isCustom: Boolean? = null,
+    @SerializedName("participantIds") val participantIds: List<Int>? = null,
+    @SerializedName("notes") val notes: String? = null
+)

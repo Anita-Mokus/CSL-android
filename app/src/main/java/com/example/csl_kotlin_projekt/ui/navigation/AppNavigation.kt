@@ -9,16 +9,12 @@ import com.example.csl_kotlin_projekt.ui.screens.splash.SplashScreen
 import com.example.csl_kotlin_projekt.ui.screens.login.LoginScreen
 import com.example.csl_kotlin_projekt.ui.screens.register.RegisterScreen
 import com.example.csl_kotlin_projekt.ui.screens.home.HomeScreen
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import com.example.csl_kotlin_projekt.ui.screens.createschedule.CreateScheduleScreen
 import com.example.csl_kotlin_projekt.ui.screens.addhabit.AddHabitScreen
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.csl_kotlin_projekt.ui.screens.scheduledetails.ScheduleDetailsScreen
+import com.example.csl_kotlin_projekt.ui.screens.editschedule.EditScheduleScreen
 
 @Composable
 fun AppNavigation(
@@ -105,7 +101,24 @@ fun AppNavigation(
             val id = backStackEntry.arguments?.getInt("id") ?: 0
             ScheduleDetailsScreen(
                 scheduleId = id,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToEdit = { editId -> navController.navigate("edit_schedule/$editId") }
+            )
+        }
+        composable(
+            route = "edit_schedule/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getInt("id") ?: 0
+            EditScheduleScreen(
+                scheduleId = id,
+                onNavigateBack = { navController.popBackStack() },
+                onSaved = { updatedId ->
+                    // Replace details with a refreshed instance
+                    navController.navigate("schedule_details/$updatedId") {
+                        popUpTo("schedule_details/$updatedId") { inclusive = true }
+                    }
+                }
             )
         }
     }

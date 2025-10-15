@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -21,6 +22,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
@@ -113,14 +116,38 @@ fun ScheduleDetailsScreen(
 
                     Spacer(Modifier.height(16.dp))
 
-                    // Schedule notes
-                    if (!s.notes.isNullOrBlank()) {
-                        Text(text = "Notes", style = MaterialTheme.typography.titleMedium)
-                        Card(modifier = Modifier.fillMaxWidth()) {
-                            Text(text = s.notes, modifier = Modifier.padding(12.dp))
+                    // Schedule notes with inline edit
+                    Text(text = "Notes", style = MaterialTheme.typography.titleMedium)
+                    if (uiState.editingNotes) {
+                        OutlinedTextField(
+                            value = uiState.notesDraft,
+                            onValueChange = viewModel::setNotesDraft,
+                            label = { Text("Edit notes") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Button(onClick = { viewModel.saveNotes(context) }, enabled = !uiState.savingNotes) {
+                                Text(if (uiState.savingNotes) "Saving..." else "Save")
+                            }
+                            TextButton(onClick = { viewModel.cancelEditNotes() }, enabled = !uiState.savingNotes) {
+                                Text("Cancel")
+                            }
                         }
-                        Spacer(Modifier.height(16.dp))
+                    } else {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = s.notes?.takeIf { it.isNotBlank() } ?: "No notes yet.",
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Row {
+                            TextButton(onClick = { viewModel.startEditNotes() }) { Text("Edit Notes") }
+                        }
                     }
+
+                    Spacer(Modifier.height(16.dp))
 
                     // Recent activities (progress history)
                     Text(text = "Recent Activity", style = MaterialTheme.typography.titleMedium)

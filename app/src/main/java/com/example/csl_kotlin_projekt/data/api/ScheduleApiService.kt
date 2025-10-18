@@ -90,4 +90,10 @@ interface ScheduleApiService {
         @Header("Authorization") authorization: String,
         @Path("id") id: Int
     ): Response<Unit>
+
+    @GET("habit/user/{userId}")
+    suspend fun getHabitsByUser(
+        @Header("Authorization") authorization: String,
+        @Path("userId") userId: Int
+    ): Response<List<HabitResponseDto>>
 }

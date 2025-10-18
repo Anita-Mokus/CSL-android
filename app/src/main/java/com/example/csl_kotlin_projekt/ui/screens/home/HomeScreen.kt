@@ -31,6 +31,7 @@ fun HomeScreen(
     onNavigateToAddSchedule: () -> Unit,
     onNavigateToAddHabit: () -> Unit = {},
     onNavigateToScheduleDetails: (Int) -> Unit,
+    onNavigateToProfile: () -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -114,7 +115,7 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text("Laci's Smexy App") },
                 actions = {
-                    IconButton(onClick = { viewModel.logout(context) }) {
+                    IconButton(onClick = { onNavigateToProfile() }) {
                         Icon(Icons.Default.Person, contentDescription = "Profile")
                     }
                     // Overflow menu for extra actions

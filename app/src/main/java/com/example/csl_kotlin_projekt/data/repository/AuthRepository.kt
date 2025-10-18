@@ -7,6 +7,7 @@ import com.example.csl_kotlin_projekt.data.models.AuthResponseDto
 import com.example.csl_kotlin_projekt.data.models.SignInDto
 import com.example.csl_kotlin_projekt.data.models.SignUpDto
 import com.example.csl_kotlin_projekt.data.models.TokensDto
+import com.example.csl_kotlin_projekt.data.models.ProfileResponseDto
 import okhttp3.MultipartBody
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -127,6 +128,19 @@ class AuthRepository(
                 Result.success(Unit)
             } else {
                 Result.failure(Exception("Token refresh failed: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getProfile(): Result<ProfileResponseDto> = withContext(Dispatchers.IO) {
+        try {
+            val response = authApiService.getProfile()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to load profile: ${response.message()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

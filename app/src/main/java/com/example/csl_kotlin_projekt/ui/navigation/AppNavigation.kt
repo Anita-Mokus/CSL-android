@@ -15,6 +15,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.csl_kotlin_projekt.ui.screens.scheduledetails.ScheduleDetailsScreen
 import com.example.csl_kotlin_projekt.ui.screens.editschedule.EditScheduleScreen
+import com.example.csl_kotlin_projekt.ui.screens.profile.ProfileScreen
 
 @Composable
 fun AppNavigation(
@@ -91,6 +92,9 @@ fun AppNavigation(
                 },
                 onNavigateToScheduleDetails = { id ->
                     navController.navigate("schedule_details/$id")
+                },
+                onNavigateToProfile = {
+                    navController.navigate("profile")
                 }
             )
         }
@@ -117,6 +121,17 @@ fun AppNavigation(
                     // Replace details with a refreshed instance
                     navController.navigate("schedule_details/$updatedId") {
                         popUpTo("schedule_details/$updatedId") { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable("profile") {
+            ProfileScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAddHabit = { navController.navigate("add_habit") },
+                onLoggedOut = {
+                    navController.navigate("login") {
+                        popUpTo("home") { inclusive = true }
                     }
                 }
             )

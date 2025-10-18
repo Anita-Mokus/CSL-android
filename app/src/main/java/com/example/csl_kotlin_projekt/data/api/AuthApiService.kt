@@ -4,9 +4,11 @@ import com.example.csl_kotlin_projekt.data.models.AuthResponseDto
 import com.example.csl_kotlin_projekt.data.models.SignInDto
 import com.example.csl_kotlin_projekt.data.models.SignUpDto
 import com.example.csl_kotlin_projekt.data.models.TokensDto
+import com.example.csl_kotlin_projekt.data.models.ProfileResponseDto
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
@@ -31,4 +33,7 @@ interface AuthApiService {
     
     @POST("auth/local/logout")
     suspend fun logout(): Response<Unit>
+
+    @GET("profile")
+    suspend fun getProfile(): Response<ProfileResponseDto>
 }

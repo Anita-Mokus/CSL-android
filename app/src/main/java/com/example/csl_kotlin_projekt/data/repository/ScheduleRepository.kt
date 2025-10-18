@@ -322,4 +322,23 @@ class ScheduleRepository(private val scheduleApiService: ScheduleApiService) {
             Result.failure(e)
         }
     }
+
+    suspend fun getHabitsByUser(accessToken: String, userId: Int): Result<List<HabitResponseDto>> = withContext(Dispatchers.IO) {
+        try {
+            Log.d("ScheduleRepository", "Making get/habit/user/$userId...")
+            val response = scheduleApiService.getHabitsByUser("Bearer $accessToken", userId)
+            Log.d("ScheduleRepository", "getHabitsByUser response code=${response.code()} message=${response.message()}")
+            if (!response.isSuccessful) {
+                val err = try { response.errorBody()?.string() } catch (_: Exception) { null }
+                if (!err.isNullOrBlank()) Log.d("ScheduleRepository", "getHabitsByUser errorBody=$err")
+            }
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to fetch user's habits: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

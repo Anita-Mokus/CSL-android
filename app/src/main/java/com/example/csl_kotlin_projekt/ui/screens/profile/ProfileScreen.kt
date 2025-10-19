@@ -18,6 +18,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -136,6 +137,9 @@ fun ProfileScreen(
                         } else {
                             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 items(uiState.habits) { h ->
+                                    // Find matching progress summary for this habit (if any)
+                                    val hp = uiState.habitProgress.find { it.habit.id == h.id }
+
                                     Card(modifier = Modifier.fillMaxWidth()) {
                                         Column(modifier = Modifier.padding(12.dp)) {
                                             Text(text = h.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -144,6 +148,20 @@ fun ProfileScreen(
                                             }
                                             Text(text = "Category: ${h.category.name}", style = MaterialTheme.typography.bodySmall)
                                             Text(text = "Goal: ${h.goal}", style = MaterialTheme.typography.bodySmall)
+
+                                            // Show progress line if we have a summary
+                                            if (hp != null) {
+                                                Spacer(modifier = Modifier.height(8.dp))
+                                                // percent value between 0f..1f
+                                                val percent = hp.percent.coerceIn(0f, 1f)
+                                                LinearProgressIndicator(progress = percent, modifier = Modifier.fillMaxWidth())
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                                    Text(text = "${(percent * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)
+                                                    Text(text = "${hp.completedSchedules}/${hp.totalSchedules} completed", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                    Text(text = "${hp.totalLoggedMinutes}m logged", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -155,4 +173,3 @@ fun ProfileScreen(
         }
     }
 }
-

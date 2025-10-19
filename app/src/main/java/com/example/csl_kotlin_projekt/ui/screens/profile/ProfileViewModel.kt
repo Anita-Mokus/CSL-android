@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.csl_kotlin_projekt.data.models.HabitResponseDto
 import com.example.csl_kotlin_projekt.data.models.ProfileResponseDto
+import com.example.csl_kotlin_projekt.data.models.ScheduleStatus
 import com.example.csl_kotlin_projekt.data.network.NetworkModule
 import com.example.csl_kotlin_projekt.data.repository.AuthRepository
 import com.example.csl_kotlin_projekt.data.repository.ScheduleRepository
@@ -12,6 +13,25 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
+
+// Small UI model summarizing per-habit completion
+data class HabitProgressUi(
+    val habit: HabitResponseDto,
+    val totalSchedules: Int,
+    val completedSchedules: Int,
+    val totalDurationMinutes: Int,
+    val totalLoggedMinutes: Int
+) {
+    // Prefer minutes-based percentage if we have any planned duration; otherwise fall back to schedule completion ratio
+    val percent: Float get() {
+        return when {
+            totalDurationMinutes > 0 -> (totalLoggedMinutes.toFloat() / totalDurationMinutes).coerceIn(0f, 1f)
+            totalSchedules > 0 -> (completedSchedules.toFloat() / totalSchedules).coerceIn(0f, 1f)
+            else -> 0f
+        }
+    }
+}
 
 data class ProfileUiState(
     val isLoading: Boolean = false,
@@ -20,7 +40,9 @@ data class ProfileUiState(
     val habits: List<HabitResponseDto> = emptyList(),
     val showLogoutConfirm: Boolean = false,
     val loggingOut: Boolean = false,
-    val logoutSuccess: Boolean = false
+    val logoutSuccess: Boolean = false,
+    // New: per-habit completion summaries rendered in the Profile screen
+    val habitProgress: List<HabitProgressUi> = emptyList()
 )
 
 class ProfileViewModel : ViewModel() {
@@ -42,9 +64,54 @@ class ProfileViewModel : ViewModel() {
                     _uiState.value = _uiState.value.copy(isLoading = false, error = "You must be logged in.")
                     return@launch
                 }
+                // Load user's habits first
                 val habitsRes = scheduleRepo.getHabitsByUser(token, profile.id)
                 if (habitsRes.isSuccess) {
-                    _uiState.value = _uiState.value.copy(isLoading = false, habits = habitsRes.getOrNull().orEmpty())
+                    val habits = habitsRes.getOrNull().orEmpty()
+                    // Try to load all schedules to compute per-habit completion
+                    val schedulesRes = scheduleRepo.getAllSchedules(token)
+                    val habitProgress = if (schedulesRes.isSuccess) {
+                        val schedules = schedulesRes.getOrNull().orEmpty()
+                        // Group schedules by habit id and compute completion counts and minutes
+                        val byHabit = schedules.groupBy { it.habit.id }
+                        habits.map { h ->
+                            val list = byHabit[h.id].orEmpty()
+                            val total = list.size
+                            var completed = 0
+                            var totalDuration = 0
+                            var totalLogged = 0
+                            list.forEach { s ->
+                                // Count completed
+                                val anyCompleted = s.status == ScheduleStatus.Completed || (s.progress?.any { it.isCompleted } == true)
+                                if (anyCompleted) completed++
+                                // Planned duration
+                                val plannedMinutes = s.durationMinutes ?: run {
+                                    val start = s.startTime.time
+                                    val end = s.endTime?.time
+                                    if (end != null && end > start) {
+                                        val diffMs = end - start
+                                        (TimeUnit.MILLISECONDS.toMinutes(diffMs)).toInt()
+                                    } else 0
+                                }
+                                totalDuration += (plannedMinutes).coerceAtLeast(0)
+                                // Logged minutes across all progress entries for this schedule
+                                val logged = s.progress?.sumOf { it.loggedTime ?: 0 } ?: 0
+                                totalLogged += logged.coerceAtLeast(0)
+                            }
+                            HabitProgressUi(
+                                habit = h,
+                                totalSchedules = total,
+                                completedSchedules = completed,
+                                totalDurationMinutes = totalDuration,
+                                totalLoggedMinutes = totalLogged
+                            )
+                        }
+                    } else {
+                        // If schedules failed to load, still present habits with 0% (and bubble error)
+                        _uiState.value = _uiState.value.copy(error = schedulesRes.exceptionOrNull()?.message ?: _uiState.value.error)
+                        habits.map { h -> HabitProgressUi(h, totalSchedules = 0, completedSchedules = 0, totalDurationMinutes = 0, totalLoggedMinutes = 0) }
+                    }
+                    _uiState.value = _uiState.value.copy(isLoading = false, habits = habits, habitProgress = habitProgress)
                 } else {
                     _uiState.value = _uiState.value.copy(isLoading = false, error = habitsRes.exceptionOrNull()?.message ?: "Failed to load habits")
                 }
@@ -70,4 +137,3 @@ class ProfileViewModel : ViewModel() {
         }
     }
 }
-

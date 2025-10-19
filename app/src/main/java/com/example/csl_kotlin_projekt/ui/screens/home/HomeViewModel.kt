@@ -17,6 +17,8 @@ data class HomeUiState(
     val isLoading: Boolean = false,
     val username: String? = null,
     val email: String? = null,
+    val profileImageUrl: String? = null,
+    val profileImageBase64: String? = null,
     val logoutError: String? = null,
     val isLogoutSuccessful: Boolean = false,
     val schedule: List<ScheduleResponseDto> = emptyList(),
@@ -85,10 +87,25 @@ class HomeViewModel : ViewModel() {
     fun loadUserInfo(context: android.content.Context) {
         viewModelScope.launch {
             val authRepository = createAuthRepository(context)
-            _uiState.value = _uiState.value.copy(
-                username = authRepository.getUsername(),
-                email = authRepository.getEmail()
-            )
+            // Try to fetch fresh profile for image and authoritative username/email
+            val res = authRepository.getProfile()
+            if (res.isSuccess) {
+                val p = res.getOrNull()!!
+                _uiState.value = _uiState.value.copy(
+                    username = p.username,
+                    email = p.email,
+                    profileImageUrl = p.profileImageUrl,
+                    profileImageBase64 = p.profileImageBase64
+                )
+            } else {
+                // Fallback to cached prefs for username/email; no image available
+                _uiState.value = _uiState.value.copy(
+                    username = authRepository.getUsername(),
+                    email = authRepository.getEmail(),
+                    profileImageUrl = null,
+                    profileImageBase64 = null
+                )
+            }
         }
     }
 

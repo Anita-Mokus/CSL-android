@@ -27,7 +27,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -44,6 +45,7 @@ fun ProfileScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAddHabit: () -> Unit,
     onLoggedOut: () -> Unit,
+    onNavigateToEditProfile: () -> Unit,
     viewModel: ProfileViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -85,8 +87,11 @@ fun ProfileScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onNavigateToEditProfile) {
+                        Icon(Icons.Filled.Edit, contentDescription = "Edit Profile")
+                    }
                     IconButton(onClick = { viewModel.openLogoutConfirm() }) {
-                        Icon(Icons.Filled.Logout, contentDescription = "Logout")
+                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout")
                     }
                 }
             )
@@ -123,11 +128,12 @@ fun ProfileScreen(
                         Text(text = p.username, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                         Text(text = p.email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (!p.description.isNullOrBlank()) {
-                            Text(text = p.description!!, style = MaterialTheme.typography.bodyMedium)
+                            Text(text = p.description ?: "", style = MaterialTheme.typography.bodyMedium)
                         }
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Button(onClick = onNavigateToAddHabit) { Text("Add Habit") }
+                            OutlinedButton(onClick = onNavigateToEditProfile) { Text("Edit Profile") }
                             OutlinedButton(onClick = { viewModel.openLogoutConfirm() }) { Text("Logout") }
                         }
                         Spacer(Modifier.height(16.dp))
@@ -144,7 +150,7 @@ fun ProfileScreen(
                                         Column(modifier = Modifier.padding(12.dp)) {
                                             Text(text = h.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                                             if (!h.description.isNullOrBlank()) {
-                                                Text(text = h.description!!, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                Text(text = h.description ?: "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                             }
                                             Text(text = "Category: ${h.category.name}", style = MaterialTheme.typography.bodySmall)
                                             Text(text = "Goal: ${h.goal}", style = MaterialTheme.typography.bodySmall)
@@ -152,9 +158,8 @@ fun ProfileScreen(
                                             // Show progress line if we have a summary
                                             if (hp != null) {
                                                 Spacer(modifier = Modifier.height(8.dp))
-                                                // percent value between 0f..1f
                                                 val percent = hp.percent.coerceIn(0f, 1f)
-                                                LinearProgressIndicator(progress = percent, modifier = Modifier.fillMaxWidth())
+                                                LinearProgressIndicator(progress = { percent }, modifier = Modifier.fillMaxWidth())
                                                 Spacer(modifier = Modifier.height(6.dp))
                                                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                                     Text(text = "${(percent * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)

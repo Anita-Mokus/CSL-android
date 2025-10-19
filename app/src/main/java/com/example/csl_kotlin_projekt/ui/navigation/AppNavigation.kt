@@ -16,6 +16,7 @@ import androidx.navigation.navArgument
 import com.example.csl_kotlin_projekt.ui.screens.scheduledetails.ScheduleDetailsScreen
 import com.example.csl_kotlin_projekt.ui.screens.editschedule.EditScheduleScreen
 import com.example.csl_kotlin_projekt.ui.screens.profile.ProfileScreen
+import com.example.csl_kotlin_projekt.ui.screens.editprofile.EditProfileScreen
 
 @Composable
 fun AppNavigation(
@@ -133,7 +134,14 @@ fun AppNavigation(
                     navController.navigate("login") {
                         popUpTo("home") { inclusive = true }
                     }
-                }
+                },
+                onNavigateToEditProfile = { navController.navigate("edit_profile") }
+            )
+        }
+        composable("edit_profile") {
+            EditProfileScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() }
             )
         }
     }

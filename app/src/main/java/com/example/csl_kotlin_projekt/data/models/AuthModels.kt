@@ -61,3 +61,7 @@ data class ProfileResponseDto(
     @SerializedName("created_at") val createdAt: Date,
     @SerializedName("updated_at") val updatedAt: Date
 )
+
+data class UpdateProfileDto(
+    @SerializedName("username") val username: String?
+)

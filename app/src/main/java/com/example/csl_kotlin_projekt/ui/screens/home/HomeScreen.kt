@@ -23,6 +23,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import android.util.Base64
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +55,7 @@ fun HomeScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.loadSchedule(context)
+                viewModel.loadUserInfo(context) // refresh profile image if changed
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -61,6 +67,21 @@ fun HomeScreen(
         if (uiState.isLogoutSuccessful) {
             onNavigateToLogin()
         }
+    }
+
+    // Prepare model for profile image (url or decoded base64)
+    val profileImageModel by remember(uiState.profileImageUrl, uiState.profileImageBase64) {
+        mutableStateOf(
+            when {
+                !uiState.profileImageUrl.isNullOrBlank() -> uiState.profileImageUrl
+                !uiState.profileImageBase64.isNullOrBlank() -> try {
+                    val raw = uiState.profileImageBase64
+                    val cleaned = raw?.substringAfter("base64,", missingDelimiterValue = raw)
+                    Base64.decode(cleaned, Base64.DEFAULT)
+                } catch (_: Exception) { null }
+                else -> null
+            }
+        )
     }
 
     // Progress dialog
@@ -116,7 +137,18 @@ fun HomeScreen(
                 title = { Text("Laci's Smexy App") },
                 actions = {
                     IconButton(onClick = { onNavigateToProfile() }) {
-                        Icon(Icons.Default.Person, contentDescription = "Profile")
+                        if (profileImageModel != null) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(profileImageModel)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Profile",
+                                modifier = Modifier.size(32.dp).clip(CircleShape)
+                            )
+                        } else {
+                            Icon(Icons.Default.Person, contentDescription = "Profile")
+                        }
                     }
                     // Overflow menu for extra actions
                     Box {
@@ -279,13 +311,11 @@ fun ScheduleItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-
-            TextButton(onClick = onLogProgress) {
-                Text("Log Progress")
-            }
-
-            IconButton(onClick = { /* TODO: Handle more options */ }) {
-                Icon(Icons.Default.MoreVert, contentDescription = "More Options")
+            // Action Buttons
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onLogProgress) { Text("Log") }
+                Spacer(modifier = Modifier.width(8.dp))
+                TextButton(onClick = onOpenDetails) { Text("Details") }
             }
         }
     }

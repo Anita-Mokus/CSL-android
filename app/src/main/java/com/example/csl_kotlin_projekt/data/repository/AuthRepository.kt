@@ -8,9 +8,12 @@ import com.example.csl_kotlin_projekt.data.models.SignInDto
 import com.example.csl_kotlin_projekt.data.models.SignUpDto
 import com.example.csl_kotlin_projekt.data.models.TokensDto
 import com.example.csl_kotlin_projekt.data.models.ProfileResponseDto
+import com.example.csl_kotlin_projekt.data.models.UpdateProfileDto
 import okhttp3.MultipartBody
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class AuthRepository(
     private val authApiService: AuthApiService,
@@ -141,6 +144,39 @@ class AuthRepository(
                 Result.success(response.body()!!)
             } else {
                 Result.failure(Exception("Failed to load profile: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateProfile(username: String?): Result<ProfileResponseDto> = withContext(Dispatchers.IO) {
+        try {
+            val dto = UpdateProfileDto(username = username)
+            val response = authApiService.updateProfile(dto)
+            if (response.isSuccessful && response.body() != null) {
+                // Update cached username/email if present
+                response.body()?.let { p ->
+                    sharedPreferences.edit().putString(KEY_USERNAME, p.username).apply()
+                }
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to update profile: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun uploadProfileImage(imageBytes: ByteArray, filename: String = "profile.jpg", mimeType: String = "image/jpeg"): Result<ProfileResponseDto> = withContext(Dispatchers.IO) {
+        try {
+            val body = imageBytes.toRequestBody(mimeType.toMediaTypeOrNull())
+            val part = MultipartBody.Part.createFormData("profileImage", filename, body)
+            val response = authApiService.uploadProfileImage(part)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to upload profile image: ${response.message()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

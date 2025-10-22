@@ -1,5 +1,7 @@
 package com.example.csl_kotlin_projekt.ui.screens.profile
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -131,10 +133,18 @@ fun ProfileScreen(
                             Text(text = p.description ?: "", style = MaterialTheme.typography.bodyMedium)
                         }
                         Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Button(onClick = onNavigateToAddHabit) { Text("Add Habit") }
-                            OutlinedButton(onClick = onNavigateToEditProfile) { Text("Edit Profile") }
-                            OutlinedButton(onClick = { viewModel.openLogoutConfirm() }) { Text("Logout") }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Button(onClick = onNavigateToAddHabit) {
+                                Text("Add Habit")
+                            }
+                            OutlinedButton(onClick = onNavigateToEditProfile) {
+                                Text("Edit Profile")
+                            }
                         }
                         Spacer(Modifier.height(16.dp))
                         Text(text = "My Habits", style = MaterialTheme.typography.titleMedium)

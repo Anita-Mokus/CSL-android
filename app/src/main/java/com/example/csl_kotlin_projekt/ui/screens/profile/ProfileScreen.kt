@@ -1,45 +1,37 @@
 package com.example.csl_kotlin_projekt.ui.screens.profile
 
+import android.util.Base64
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
+import coil.compose.AsyncImagePainter
+import coil.request.ImageRequest
+import com.example.csl_kotlin_projekt.data.repository.createAuthRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,6 +47,18 @@ fun ProfileScreen(
 
     LaunchedEffect(Unit) {
         viewModel.load(context)
+    }
+
+    // Refresh when returning to this screen (e.g., after editing profile image)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.load(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     // Handle logout success
@@ -127,8 +131,83 @@ fun ProfileScreen(
                 else -> {
                     val p = uiState.profile
                     if (p != null) {
-                        Text(text = p.username, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                        Text(text = p.email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        // Replace username/email header with avatar + texts
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            val context = LocalContext.current
+                            val token = remember(context) { createAuthRepository(context).getAccessToken() }
+
+                            // Build model like Home: prefer URL (with cache-busting), else decode base64 to bytes
+                            val profileImageModel = remember(p.profileImageUrl, p.profileImageBase64, p.updatedAt) {
+                                when {
+                                    !p.profileImageUrl.isNullOrBlank() -> {
+                                        val base = p.profileImageUrl
+                                        val sep = if (base.contains('?')) '&' else '?'
+                                        "${base}${sep}t=${p.updatedAt.time}"
+                                    }
+                                    !p.profileImageBase64.isNullOrBlank() -> {
+                                        val raw = p.profileImageBase64
+                                        val cleaned = raw.substringAfter("base64,", missingDelimiterValue = raw)
+                                        try { Base64.decode(cleaned, Base64.DEFAULT) } catch (_: Exception) { null }
+                                    }
+                                    else -> null
+                                }
+                            }
+
+                            // Build an ImageRequest, attach Authorization header for URL case
+                            val imageRequest = remember(profileImageModel, token) {
+                                profileImageModel?.let { model ->
+                                    ImageRequest.Builder(context)
+                                        .data(model)
+                                        .apply {
+                                            if (model is String && !token.isNullOrBlank()) {
+                                                addHeader("Authorization", "Bearer $token")
+                                            }
+                                        }
+                                        .crossfade(true)
+                                        .build()
+                                }
+                            }
+
+                            val avatarModifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant ?: MaterialTheme.colorScheme.outline, CircleShape)
+
+                            if (imageRequest != null) {
+                                SubcomposeAsyncImage(
+                                    model = imageRequest,
+                                    contentDescription = "Profile image",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = avatarModifier
+                                ) {
+                                    when (painter.state) {
+                                        is AsyncImagePainter.State.Loading, is AsyncImagePainter.State.Empty -> {
+                                            Icon(Icons.Filled.AccountCircle, contentDescription = null)
+                                        }
+                                        is AsyncImagePainter.State.Error -> {
+                                            Icon(Icons.Filled.AccountCircle, contentDescription = null)
+                                        }
+                                        else -> SubcomposeAsyncImageContent()
+                                    }
+                                }
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Filled.AccountCircle,
+                                    contentDescription = "Profile placeholder",
+                                    modifier = avatarModifier
+                                )
+                            }
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(text = p.username, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                                Text(text = p.email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                         if (!p.description.isNullOrBlank()) {
                             Text(text = p.description ?: "", style = MaterialTheme.typography.bodyMedium)
                         }

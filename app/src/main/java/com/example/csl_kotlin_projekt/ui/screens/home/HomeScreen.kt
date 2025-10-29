@@ -16,6 +16,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import android.util.Base64
+import android.app.DatePickerDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,18 +46,22 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
 
+    // Selected day for filtering (defaults to today)
+    var selectedDate by remember { mutableStateOf(Date()) }
+    val dateFmt = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+
     // Load user info and schedule when screen is first displayed
     LaunchedEffect(Unit) {
         viewModel.loadUserInfo(context)
-        viewModel.loadSchedule(context)
+        viewModel.loadSchedule(context, selectedDate)
     }
 
     // Reload schedule whenever the screen resumes (e.g., after creating a schedule)
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(lifecycleOwner, selectedDate) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.loadSchedule(context)
+                viewModel.loadSchedule(context, selectedDate)
                 viewModel.loadUserInfo(context) // refresh profile image if changed
             }
         }
@@ -181,14 +188,71 @@ fun HomeScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Welcome Message
-            Text(
-                text = "Today's Schedule",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.align(Alignment.Start)
-            )
+            // Header + date filter controls
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Schedule",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Date selector + Filter button
+            val cal = remember(selectedDate) {
+                Calendar.getInstance().apply { time = selectedDate }
+            }
+            val datePickerDialog = remember(selectedDate) {
+                DatePickerDialog(
+                    context,
+                    { _, y, m, d ->
+                        val c = Calendar.getInstance().apply {
+                            set(Calendar.YEAR, y)
+                            set(Calendar.MONTH, m)
+                            set(Calendar.DAY_OF_MONTH, d)
+                            set(Calendar.HOUR_OF_DAY, 0)
+                            set(Calendar.MINUTE, 0)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
+                        selectedDate = c.time
+                    },
+                    cal.get(Calendar.YEAR),
+                    cal.get(Calendar.MONTH),
+                    cal.get(Calendar.DAY_OF_MONTH)
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    OutlinedTextField(
+                        value = dateFmt.format(selectedDate),
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Filter day") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { datePickerDialog.show() }
+                    )
+                }
+                Button(onClick = { viewModel.loadSchedule(context, selectedDate) }, enabled = !uiState.isLoading) {
+                    Text("Filter")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Loading Indicator
             if (uiState.isLoading) {
@@ -217,7 +281,7 @@ fun HomeScreen(
             // Empty Schedule Message
             if (!uiState.isLoading && uiState.schedule.isEmpty() && uiState.scheduleError == null) {
                 Text(
-                    text = "You have no schedules for today. Add one to get started!",
+                    text = "No schedules for ${dateFmt.format(selectedDate)}.",
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(16.dp)

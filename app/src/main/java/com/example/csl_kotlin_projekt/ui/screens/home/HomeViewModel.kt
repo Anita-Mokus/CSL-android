@@ -23,6 +23,7 @@ data class HomeUiState(
     val isLogoutSuccessful: Boolean = false,
     val schedule: List<ScheduleResponseDto> = emptyList(),
     val scheduleError: String? = null,
+    val currentDate: Date = Date(),
     // Progress dialog state
     val showProgressDialog: Boolean = false,
     val progressScheduleId: Int? = null,
@@ -43,7 +44,7 @@ class HomeViewModel : ViewModel() {
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     fun loadSchedule(context: android.content.Context, date: Date? = Date()) {
-        _uiState.value = _uiState.value.copy(isLoading = true, scheduleError = null)
+        _uiState.value = _uiState.value.copy(isLoading = true, scheduleError = null, currentDate = date ?: Date())
         viewModelScope.launch {
             val scheduleRepository = ScheduleRepository(NetworkModule.createScheduleApiService(context))
             val authRepository = createAuthRepository(context)
@@ -51,29 +52,18 @@ class HomeViewModel : ViewModel() {
             if (token.isNullOrBlank()) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    scheduleError = "You must be logged in to load today’s schedule."
+                    scheduleError = "You must be logged in to load schedules."
                 )
                 return@launch
             }
 
-            // Fetch all schedules and filter client-side for today's local day
-            val result = scheduleRepository.getAllSchedules(token)
+            // Use server-side filtered by day
+            val result = scheduleRepository.getSchedulesByDay(date, token)
             if (result.isSuccess) {
-                val all = result.getOrNull().orEmpty()
-                val cal = java.util.Calendar.getInstance().apply {
-                    time = date ?: Date()
-                    set(java.util.Calendar.HOUR_OF_DAY, 0)
-                    set(java.util.Calendar.MINUTE, 0)
-                    set(java.util.Calendar.SECOND, 0)
-                    set(java.util.Calendar.MILLISECOND, 0)
-                }
-                val start = cal.time
-                cal.add(java.util.Calendar.DAY_OF_MONTH, 1)
-                val end = cal.time
-                val todays = all.filter { it.startTime >= start && it.startTime < end }
+                val list = result.getOrNull().orEmpty().sortedBy { it.startTime }
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    schedule = todays.sortedBy { it.startTime }
+                    schedule = list
                 )
             } else {
                 _uiState.value = _uiState.value.copy(
@@ -189,8 +179,8 @@ class HomeViewModel : ViewModel() {
             )
             val result = repo.createProgress(token, dto)
             if (result.isSuccess) {
-                // Refresh today's schedules and close dialog
-                loadSchedule(context)
+                // Refresh schedules for the currently selected day and close dialog
+                loadSchedule(context, _uiState.value.currentDate)
                 _uiState.value = _uiState.value.copy(progressSubmitting = false, showProgressDialog = false)
             } else {
                 _uiState.value = _uiState.value.copy(progressSubmitting = false, progressError = result.exceptionOrNull()?.message ?: "Failed to add progress")
@@ -225,7 +215,7 @@ class HomeViewModel : ViewModel() {
             )
             val result = repo.createProgress(token, dto)
             if (result.isSuccess) {
-                loadSchedule(context)
+                loadSchedule(context, _uiState.value.currentDate)
                 _uiState.value = _uiState.value.copy(
                     togglingScheduleIds = _uiState.value.togglingScheduleIds - scheduleId,
                     togglingDesired = _uiState.value.togglingDesired - scheduleId

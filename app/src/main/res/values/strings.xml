@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">CSL-Kotlin-Projekt</string>
+    <string name="google_web_client_id">280626717681-0f65rrkbn8u9ocqulvvhlrda8afsllg7.apps.googleusercontent.com</string>
 </resources>

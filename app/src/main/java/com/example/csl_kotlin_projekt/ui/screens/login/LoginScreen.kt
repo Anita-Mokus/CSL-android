@@ -1,5 +1,7 @@
 package com.example.csl_kotlin_projekt.ui.screens.login
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -15,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -24,6 +27,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.GoogleApiAvailability
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.CommonStatusCodes
+import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes
+import android.app.Activity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +56,47 @@ fun LoginScreen(
         }
     }
     
+    // Google Sign-In setup
+    val serverClientId = stringResource(id = com.example.csl_kotlin_projekt.R.string.google_web_client_id)
+    val gso: GoogleSignInOptions = remember(serverClientId) {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(serverClientId)
+            .requestEmail()
+            .build()
+    }
+    val googleSignInClient: GoogleSignInClient = remember(gso) { GoogleSignIn.getClient(context, gso) }
+    val googleLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode != Activity.RESULT_OK) {
+            viewModel.setGeneralError("Google sign-in canceled or failed (code=${result.resultCode}).")
+            return@rememberLauncherForActivityResult
+        }
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val idTokenStr: String = account.idToken ?: ""
+            if (idTokenStr.isNotBlank()) {
+                viewModel.loginWithGoogle(context, idTokenStr, onNavigateToHome)
+            } else {
+                viewModel.setGeneralError("Google returned no ID token. Ensure you used the WEB client ID in strings.xml and that the account has Google Play Services.")
+            }
+        } catch (e: ApiException) {
+            val code = e.statusCode
+            val name = when (code) {
+                CommonStatusCodes.CANCELED -> "CANCELED"
+                CommonStatusCodes.NETWORK_ERROR -> "NETWORK_ERROR"
+                CommonStatusCodes.DEVELOPER_ERROR -> "DEVELOPER_ERROR"
+                CommonStatusCodes.INTERNAL_ERROR -> "INTERNAL_ERROR"
+                GoogleSignInStatusCodes.SIGN_IN_CANCELLED -> "SIGN_IN_CANCELLED"
+                GoogleSignInStatusCodes.SIGN_IN_FAILED -> "SIGN_IN_FAILED"
+                GoogleSignInStatusCodes.SIGN_IN_CURRENTLY_IN_PROGRESS -> "SIGN_IN_IN_PROGRESS"
+                else -> code.toString()
+            }
+            viewModel.setGeneralError("Google sign-in failed: $name ($code)")
+        } catch (e: Exception) {
+            viewModel.setGeneralError("Google sign-in failed: ${e.message}")
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize()
     ) { paddingValues ->
@@ -199,8 +251,28 @@ fun LoginScreen(
                     Text(if (uiState.isLoading) "Signing In..." else "Sign In")
                 }
                 
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Google Sign-In Button
+                OutlinedButton(
+                    onClick = {
+                        val gms = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context)
+                        if (gms != com.google.android.gms.common.ConnectionResult.SUCCESS) {
+                            viewModel.setGeneralError("Google Play Services not available on this device (code=$gms).")
+                        } else {
+                            // Clear any cached session to avoid mismatched client IDs causing silent failures
+                            googleSignInClient.signOut().addOnCompleteListener {
+                                googleLauncher.launch(googleSignInClient.signInIntent)
+                            }
+                        }
+                    },
+                    enabled = !uiState.isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Continue with Google")
+                }
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 // Register Link
                 TextButton(
                     onClick = onNavigateToRegister,

@@ -6,6 +6,7 @@ import com.example.csl_kotlin_projekt.data.models.SignUpDto
 import com.example.csl_kotlin_projekt.data.models.TokensDto
 import com.example.csl_kotlin_projekt.data.models.ProfileResponseDto
 import com.example.csl_kotlin_projekt.data.models.UpdateProfileDto
+import com.example.csl_kotlin_projekt.data.models.GoogleSignInDto
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -29,7 +30,12 @@ interface AuthApiService {
     suspend fun signIn(
         @Body request: SignInDto
     ): Response<AuthResponseDto>
-    
+
+    @POST("auth/google")
+    suspend fun googleSignIn(
+        @Body request: GoogleSignInDto
+    ): Response<AuthResponseDto>
+
     @POST("auth/local/refresh")
     suspend fun refreshToken(): Response<TokensDto>
     

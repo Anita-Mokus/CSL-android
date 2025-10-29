@@ -65,3 +65,7 @@ data class ProfileResponseDto(
 data class UpdateProfileDto(
     @SerializedName("username") val username: String?
 )
+
+data class GoogleSignInDto(
+    @SerializedName("idToken") val idToken: String
+)

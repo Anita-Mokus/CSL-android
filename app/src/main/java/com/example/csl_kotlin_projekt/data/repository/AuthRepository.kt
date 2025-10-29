@@ -9,6 +9,7 @@ import com.example.csl_kotlin_projekt.data.models.SignUpDto
 import com.example.csl_kotlin_projekt.data.models.TokensDto
 import com.example.csl_kotlin_projekt.data.models.ProfileResponseDto
 import com.example.csl_kotlin_projekt.data.models.UpdateProfileDto
+import com.example.csl_kotlin_projekt.data.models.GoogleSignInDto
 import okhttp3.MultipartBody
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -75,7 +76,8 @@ class AuthRepository(
                 saveTokens(authResponse)
                 Result.success(authResponse)
             } else {
-                Result.failure(Exception("Registration failed: ${response.message()}"))
+                val body = response.errorBody()?.string()
+                Result.failure(Exception("Registration failed (code=${response.code()}): ${response.message()}${if (!body.isNullOrBlank()) ". Details: $body" else ""}"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -95,7 +97,8 @@ class AuthRepository(
                 saveTokens(authResponse)
                 Result.success(authResponse)
             } else {
-                Result.failure(Exception("Login failed: ${response.message()}"))
+                val body = response.errorBody()?.string()
+                Result.failure(Exception("Login failed (code=${response.code()}): ${response.message()}${if (!body.isNullOrBlank()) ". Details: $body" else ""}"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -109,7 +112,8 @@ class AuthRepository(
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("Logout failed: ${response.message()}"))
+                val body = response.errorBody()?.string()
+                Result.failure(Exception("Logout failed (code=${response.code()}): ${response.message()}${if (!body.isNullOrBlank()) ". Details: $body" else ""}"))
             }
         } catch (e: Exception) {
             clearTokens() // Clear tokens even if API call fails
@@ -130,7 +134,8 @@ class AuthRepository(
                     .apply()
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("Token refresh failed: ${response.message()}"))
+                val body = response.errorBody()?.string()
+                Result.failure(Exception("Token refresh failed (code=${response.code()}): ${response.message()}${if (!body.isNullOrBlank()) ". Details: $body" else ""}"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -143,7 +148,8 @@ class AuthRepository(
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to load profile: ${response.message()}"))
+                val body = response.errorBody()?.string()
+                Result.failure(Exception("Failed to load profile (code=${response.code()}): ${response.message()}${if (!body.isNullOrBlank()) ". Details: $body" else ""}"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -161,7 +167,8 @@ class AuthRepository(
                 }
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to update profile: ${response.message()}"))
+                val body = response.errorBody()?.string()
+                Result.failure(Exception("Failed to update profile (code=${response.code()}): ${response.message()}${if (!body.isNullOrBlank()) ". Details: $body" else ""}"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -176,7 +183,27 @@ class AuthRepository(
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to upload profile image: ${response.message()}"))
+                val err = response.errorBody()?.string()
+                Result.failure(Exception("Failed to upload profile image (code=${response.code()}): ${response.message()}${if (!err.isNullOrBlank()) ". Details: $err" else ""}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun googleSignIn(idToken: String): Result<AuthResponseDto> = withContext(Dispatchers.IO) {
+        try {
+            val response = authApiService.googleSignIn(GoogleSignInDto(idToken))
+            if (response.isSuccessful && response.body() != null) {
+                val authResponse = response.body()!!
+                if (authResponse.tokens == null || authResponse.user == null) {
+                    return@withContext Result.failure(Exception("Google sign-in successful, but server response was incomplete."))
+                }
+                saveTokens(authResponse)
+                Result.success(authResponse)
+            } else {
+                val body = response.errorBody()?.string()
+                Result.failure(Exception("Google sign-in failed (code=${response.code()}): ${response.message()}${if (!body.isNullOrBlank()) ". Details: $body" else ""}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

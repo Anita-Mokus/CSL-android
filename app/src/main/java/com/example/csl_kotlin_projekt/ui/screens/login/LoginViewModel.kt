@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import android.util.Patterns
+import android.util.Log
 
 data class LoginUiState(
     val email: String = "",
@@ -40,7 +41,12 @@ class LoginViewModel : ViewModel() {
             generalError = null
         )
     }
-    
+
+    fun setGeneralError(message: String?) {
+        Log.e("LoginViewModel", "Error: ${message ?: "unknown"}")
+        _uiState.value = _uiState.value.copy(generalError = message)
+    }
+
     fun login(context: android.content.Context, onSuccess: () -> Unit) {
         val currentState = _uiState.value
         
@@ -91,7 +97,22 @@ class LoginViewModel : ViewModel() {
             }
         }
     }
-    
+
+    fun loginWithGoogle(context: android.content.Context, idToken: String, onSuccess: () -> Unit) {
+        // Clear previous errors and set loading
+        _uiState.value = _uiState.value.copy(generalError = null, isLoading = true)
+        viewModelScope.launch {
+            val repo = createAuthRepository(context)
+            val result = repo.googleSignIn(idToken)
+            if (result.isSuccess) {
+                _uiState.value = _uiState.value.copy(isLoading = false, isLoginSuccessful = true)
+                onSuccess()
+            } else {
+                _uiState.value = _uiState.value.copy(isLoading = false, generalError = result.exceptionOrNull()?.message ?: "Google sign-in failed")
+            }
+        }
+    }
+
     private fun validateEmail(email: String): String? {
         return when {
             email.isBlank() -> "Email is required"

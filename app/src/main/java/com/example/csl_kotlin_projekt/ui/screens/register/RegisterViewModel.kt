@@ -122,7 +122,21 @@ class RegisterViewModel : ViewModel() {
             }
         }
     }
-    
+
+    fun registerWithGoogle(context: android.content.Context, idToken: String, onSuccess: () -> Unit) {
+        _uiState.value = _uiState.value.copy(generalError = null, isLoading = true)
+        viewModelScope.launch {
+            val repo = createAuthRepository(context)
+            val result = repo.googleSignIn(idToken)
+            if (result.isSuccess) {
+                _uiState.value = _uiState.value.copy(isLoading = false, isRegistrationSuccessful = true)
+                onSuccess()
+            } else {
+                _uiState.value = _uiState.value.copy(isLoading = false, generalError = result.exceptionOrNull()?.message ?: "Google sign-in failed")
+            }
+        }
+    }
+
     private fun validateUsername(username: String): String? {
         return when {
             username.isBlank() -> "Username is required"

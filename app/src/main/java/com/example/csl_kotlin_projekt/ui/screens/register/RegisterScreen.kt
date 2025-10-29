@@ -1,5 +1,7 @@
 package com.example.csl_kotlin_projekt.ui.screens.register
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -16,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -25,6 +28,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +51,26 @@ fun RegisterScreen(
         }
     }
     
+    // Google Sign-In setup for registration
+    val serverClientId = stringResource(id = com.example.csl_kotlin_projekt.R.string.google_web_client_id)
+    val gso = remember(serverClientId) {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(serverClientId)
+            .requestEmail()
+            .build()
+    }
+    val googleSignInClient = remember(gso) { GoogleSignIn.getClient(context, gso) }
+    val googleLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val idTokenStr: String = account.idToken ?: ""
+            if (idTokenStr.isNotBlank()) {
+                viewModel.registerWithGoogle(context, idTokenStr, onNavigateToHome)
+            }
+        } catch (_: Exception) { /* ignore */ }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize()
     ) { paddingValues ->
@@ -261,7 +287,18 @@ fun RegisterScreen(
                     }
                     Text(if (uiState.isLoading) "Creating Account..." else "Create Account")
                 }
-                
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Google Sign-In button for registration
+                OutlinedButton(
+                    onClick = { googleLauncher.launch(googleSignInClient.signInIntent) },
+                    enabled = !uiState.isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Continue with Google")
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 // Login Link

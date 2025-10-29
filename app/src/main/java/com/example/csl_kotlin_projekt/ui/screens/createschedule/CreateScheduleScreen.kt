@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -49,7 +49,7 @@ fun CreateScheduleScreen(
                 title = { Text("Create Schedule") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -193,33 +193,32 @@ fun CreateScheduleScreen(
                 )
             }
 
-            // Create Buttons
+            // Submit button that chooses the appropriate creation action
+            val submitLabel = when {
+                uiState.repeatPattern == "weekdays" -> "Create Weekday Recurring"
+                uiState.repeatPattern != "none" -> "Create Recurring (pattern)"
+                else -> "Create Schedule"
+            }
+            val canSubmit = !uiState.isLoading && (
+                uiState.repeatPattern != "weekdays" || uiState.daysOfWeek.isNotEmpty()
+            )
+
             Button(
-                onClick = { viewModel.createSchedule(context) },
-                enabled = !uiState.isLoading,
+                onClick = {
+                    when {
+                        uiState.repeatPattern == "weekdays" -> viewModel.createWeekdayRecurringSchedule(context)
+                        uiState.repeatPattern != "none" -> viewModel.createRecurringSchedule(context)
+                        else -> viewModel.createSchedule(context)
+                    }
+                },
+                enabled = canSubmit,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp))
                 } else {
-                    Text("Create Schedule")
+                    Text(submitLabel)
                 }
-            }
-
-            Button(
-                onClick = { viewModel.createRecurringSchedule(context) },
-                enabled = !uiState.isLoading && uiState.repeatPattern != "none",
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Create Recurring (pattern)")
-            }
-
-            Button(
-                onClick = { viewModel.createWeekdayRecurringSchedule(context) },
-                enabled = !uiState.isLoading && uiState.daysOfWeek.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Create Weekday Recurring")
             }
         }
     }

@@ -145,7 +145,8 @@ fun CreateScheduleScreen(
                 }
             }
 
-            if (uiState.repeatPattern != "none" && uiState.repeatPattern != "weekdays") {
+            // Show repeatDays only for patterns that still use the generic recurring endpoint (exclude weekdays and weekends)
+            if (uiState.repeatPattern != "none" && uiState.repeatPattern != "weekdays" && uiState.repeatPattern != "weekends") {
                 OutlinedTextField(
                     value = uiState.repeatDays,
                     onValueChange = viewModel::onRepeatDaysChanged,
@@ -175,6 +176,16 @@ fun CreateScheduleScreen(
                 if (uiState.weekdaysError != null) {
                     Text(uiState.weekdaysError!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.align(Alignment.Start))
                 }
+                OutlinedTextField(
+                    value = uiState.numberOfWeeks,
+                    onValueChange = viewModel::onNumberOfWeeksChanged,
+                    label = { Text("Number of weeks (default 4)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else if (uiState.repeatPattern == "weekends") {
+                // For weekends we don't ask which days; it's fixed to Sat and Sun (6,7)
+                Text("Weekends: Sat and Sun", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.align(Alignment.Start))
                 OutlinedTextField(
                     value = uiState.numberOfWeeks,
                     onValueChange = viewModel::onNumberOfWeeksChanged,

@@ -165,6 +165,10 @@ class CreateScheduleViewModel : ViewModel() {
         }
     }
 
+    // Some backends expect Sunday as 0 instead of 7. Map 1..7 (Mon..Sun) to backend values.
+    // Mon..Sat stay the same if backend uses 1..6, Sunday(7) becomes 0.
+    private fun mapDaysForBackend(days: Collection<Int>): List<Int> = days.map { d -> if (d == 7) 0 else d }.sorted()
+
     fun createRecurringSchedule(context: android.content.Context) {
         val s = _uiState.value
         if (s.selectedHabit == null) { _uiState.value = s.copy(habitError = "Please select a habit", error = null); return }
@@ -182,6 +186,30 @@ class CreateScheduleViewModel : ViewModel() {
             if (token.isNullOrBlank()) { _uiState.value = _uiState.value.copy(isLoading = false, error = "You must be logged in."); return@launch }
 
             val startIso = buildStartIso()
+
+            // If the selected pattern is "weekends", use the weekdays endpoint with Sat and Sun,
+            // mapping Sunday(7) -> 0 for backend compatibility.
+            if (s.repeatPattern == "weekends") {
+                val weekdayDto = CreateWeekdayRecurringScheduleDto(
+                    habitId = s.selectedHabit.id,
+                    startTime = startIso,
+                    daysOfWeek = mapDaysForBackend(listOf(6, 7)),
+                    numberOfWeeks = s.numberOfWeeks.toIntOrNull() ?: 4,
+                    durationMinutes = s.durationMinutes.toIntOrNull(),
+                    endTime = null,
+                    participantIds = null,
+                    notes = s.notes.takeIf { it.isNotBlank() }
+                )
+                val result = repo.createWeekdayRecurringSchedule(token, weekdayDto)
+                if (result.isSuccess) {
+                    Log.d("CreateScheduleVM", "createWeekendRecurringSchedule via weekdays endpoint success count=${result.getOrNull()?.size}")
+                    _uiState.value = _uiState.value.copy(isLoading = false, isScheduleCreated = true)
+                } else {
+                    _uiState.value = _uiState.value.copy(isLoading = false, error = result.exceptionOrNull()?.message ?: "Failed to create weekend recurring schedules")
+                }
+                return@launch
+            }
+
             val dto = CreateRecurringScheduleDto(
                 habitId = s.selectedHabit.id,
                 startTime = startIso,
@@ -223,7 +251,7 @@ class CreateScheduleViewModel : ViewModel() {
             val dto = CreateWeekdayRecurringScheduleDto(
                 habitId = s.selectedHabit.id,
                 startTime = startIso,
-                daysOfWeek = s.daysOfWeek.sorted(),
+                daysOfWeek = mapDaysForBackend(s.daysOfWeek),
                 numberOfWeeks = s.numberOfWeeks.toIntOrNull() ?: 4,
                 durationMinutes = s.durationMinutes.toIntOrNull(),
                 endTime = null,

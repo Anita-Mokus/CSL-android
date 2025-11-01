@@ -65,11 +65,11 @@ class ProfileViewModel : ViewModel() {
                     return@launch
                 }
                 // Load user's habits first
-                val habitsRes = scheduleRepo.getHabitsByUser(token, profile.id)
+                val habitsRes = scheduleRepo.getHabitsByUser(profile.id)
                 if (habitsRes.isSuccess) {
                     val habits = habitsRes.getOrNull().orEmpty()
                     // Try to load all schedules to compute per-habit completion
-                    val schedulesRes = scheduleRepo.getAllSchedules(token)
+                    val schedulesRes = scheduleRepo.getAllSchedules()
                     val habitProgress = if (schedulesRes.isSuccess) {
                         val schedules = schedulesRes.getOrNull().orEmpty()
                         // Group schedules by habit id and compute completion counts and minutes

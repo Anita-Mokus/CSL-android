@@ -38,12 +38,7 @@ class EditScheduleViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
             val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val token = createAuthRepository(context).getAccessToken()
-            if (token.isNullOrBlank()) {
-                _uiState.value = _uiState.value.copy(isLoading = false, error = "You must be logged in.")
-                return@launch
-            }
-            val result = repo.getScheduleById(token, id)
+            val result = repo.getScheduleById(id)
             if (result.isSuccess) {
                 val s = result.getOrNull()!!
                 val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -137,12 +132,7 @@ class EditScheduleViewModel : ViewModel() {
         _uiState.value = s.copy(saving = true, error = null)
         viewModelScope.launch {
             val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val token = createAuthRepository(context).getAccessToken()
-            if (token.isNullOrBlank()) {
-                _uiState.value = _uiState.value.copy(saving = false, error = "You must be logged in.")
-                return@launch
-            }
-            val result = repo.updateSchedule(token, id, dto)
+            val result = repo.updateSchedule(id, dto)
             if (result.isSuccess) {
                 _uiState.value = _uiState.value.copy(saving = false)
                 onSaved(result.getOrNull()!!)

@@ -58,7 +58,7 @@ class HomeViewModel : ViewModel() {
             }
 
             // Use server-side filtered by day
-            val result = scheduleRepository.getSchedulesByDay(date, token)
+            val result = scheduleRepository.getSchedulesByDay(date)
             if (result.isSuccess) {
                 val list = result.getOrNull().orEmpty().sortedBy { it.startTime }
                 _uiState.value = _uiState.value.copy(
@@ -177,7 +177,7 @@ class HomeViewModel : ViewModel() {
                 notes = s.progressNotes.takeIf { it.isNotBlank() },
                 isCompleted = s.progressCompleted
             )
-            val result = repo.createProgress(token, dto)
+            val result = repo.createProgress(dto)
             if (result.isSuccess) {
                 // Refresh schedules for the currently selected day and close dialog
                 loadSchedule(context, _uiState.value.currentDate)
@@ -213,7 +213,7 @@ class HomeViewModel : ViewModel() {
                 date = nowIso,
                 isCompleted = newCompleted
             )
-            val result = repo.createProgress(token, dto)
+            val result = repo.createProgress(dto)
             if (result.isSuccess) {
                 loadSchedule(context, _uiState.value.currentDate)
                 _uiState.value = _uiState.value.copy(

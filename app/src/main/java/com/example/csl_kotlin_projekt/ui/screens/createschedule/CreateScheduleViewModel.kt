@@ -59,7 +59,7 @@ class CreateScheduleViewModel : ViewModel() {
                 return@launch
             }
             Log.d("CreateScheduleVM", "Calling getAllHabits with token present")
-            val result = scheduleRepository.getAllHabits(token)
+            val result = scheduleRepository.getAllHabits()
             if (result.isSuccess) {
                 val list = result.getOrNull().orEmpty()
                 Log.d("CreateScheduleVM", "getAllHabits succeeded: count=${list.size}")
@@ -156,7 +156,7 @@ class CreateScheduleViewModel : ViewModel() {
                 notes = s.notes.takeIf { it.isNotBlank() }
             )
 
-            val result = scheduleRepository.createCustomSchedule(token, scheduleDto)
+            val result = scheduleRepository.createCustomSchedule(scheduleDto)
             if (result.isSuccess) {
                 _uiState.value = _uiState.value.copy(isLoading = false, isScheduleCreated = true)
             } else {
@@ -200,7 +200,7 @@ class CreateScheduleViewModel : ViewModel() {
                     participantIds = null,
                     notes = s.notes.takeIf { it.isNotBlank() }
                 )
-                val result = repo.createWeekdayRecurringSchedule(token, weekdayDto)
+                val result = repo.createWeekdayRecurringSchedule(weekdayDto)
                 if (result.isSuccess) {
                     Log.d("CreateScheduleVM", "createWeekendRecurringSchedule via weekdays endpoint success count=${result.getOrNull()?.size}")
                     _uiState.value = _uiState.value.copy(isLoading = false, isScheduleCreated = true)
@@ -221,7 +221,7 @@ class CreateScheduleViewModel : ViewModel() {
                 participantIds = null,
                 notes = s.notes.takeIf { it.isNotBlank() }
             )
-            val result = repo.createRecurringSchedule(token, dto)
+            val result = repo.createRecurringSchedule(dto)
             if (result.isSuccess) {
                 Log.d("CreateScheduleVM", "createRecurringSchedule success count=${result.getOrNull()?.size}")
                 _uiState.value = _uiState.value.copy(isLoading = false, isScheduleCreated = true)
@@ -245,7 +245,7 @@ class CreateScheduleViewModel : ViewModel() {
         viewModelScope.launch {
             val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
             val token = createAuthRepository(context).getAccessToken()
-            if (token.isNullOrBlank()) { _uiState.value = _uiState.value.copy(isLoading = false, error = "You must be logged in."); return@launch }
+            if (token.isNullOrBlank()) { _uiState.value = s.copy(isLoading = false, error = "You must be logged in."); return@launch }
 
             val startIso = buildStartIso()
             val dto = CreateWeekdayRecurringScheduleDto(
@@ -258,7 +258,7 @@ class CreateScheduleViewModel : ViewModel() {
                 participantIds = null,
                 notes = s.notes.takeIf { it.isNotBlank() }
             )
-            val result = repo.createWeekdayRecurringSchedule(token, dto)
+            val result = repo.createWeekdayRecurringSchedule(dto)
             if (result.isSuccess) {
                 Log.d("CreateScheduleVM", "createWeekdayRecurringSchedule success count=${result.getOrNull()?.size}")
                 _uiState.value = _uiState.value.copy(isLoading = false, isScheduleCreated = true)

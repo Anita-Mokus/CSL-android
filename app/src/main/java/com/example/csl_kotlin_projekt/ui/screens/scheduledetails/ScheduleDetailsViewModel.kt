@@ -6,7 +6,6 @@ import com.example.csl_kotlin_projekt.data.models.ScheduleResponseDto
 import com.example.csl_kotlin_projekt.data.models.UpdateScheduleDto
 import com.example.csl_kotlin_projekt.data.network.NetworkModule
 import com.example.csl_kotlin_projekt.data.repository.ScheduleRepository
-import com.example.csl_kotlin_projekt.data.repository.createAuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,12 +32,7 @@ class ScheduleDetailsViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
             val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val token = createAuthRepository(context).getAccessToken()
-            if (token.isNullOrBlank()) {
-                _uiState.value = _uiState.value.copy(isLoading = false, error = "You must be logged in.")
-                return@launch
-            }
-            val result = repo.getScheduleById(token, id)
+            val result = repo.getScheduleById(id)
             if (result.isSuccess) {
                 _uiState.value = _uiState.value.copy(isLoading = false, schedule = result.getOrNull())
             } else {
@@ -73,13 +67,8 @@ class ScheduleDetailsViewModel : ViewModel() {
         _uiState.value = current.copy(savingNotes = true, error = null)
         viewModelScope.launch {
             val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val token = createAuthRepository(context).getAccessToken()
-            if (token.isNullOrBlank()) {
-                _uiState.value = _uiState.value.copy(savingNotes = false, error = "You must be logged in.")
-                return@launch
-            }
             val dto = UpdateScheduleDto(notes = _uiState.value.notesDraft)
-            val result = repo.updateSchedule(token, sched.id, dto)
+            val result = repo.updateSchedule(sched.id, dto)
             if (result.isSuccess) {
                 val updated = result.getOrNull()!!
                 _uiState.value = _uiState.value.copy(
@@ -112,12 +101,7 @@ class ScheduleDetailsViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(deleting = true, showDeleteConfirm = false, error = null)
         viewModelScope.launch {
             val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val token = createAuthRepository(context).getAccessToken()
-            if (token.isNullOrBlank()) {
-                _uiState.value = _uiState.value.copy(deleting = false, error = "You must be logged in.")
-                return@launch
-            }
-            val result = repo.deleteSchedule(token, s.id)
+            val result = repo.deleteSchedule(s.id)
             if (result.isSuccess) {
                 _uiState.value = _uiState.value.copy(deleting = false, deleted = true)
             } else {

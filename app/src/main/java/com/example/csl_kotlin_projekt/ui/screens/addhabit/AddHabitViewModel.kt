@@ -54,7 +54,7 @@ class AddHabitViewModel : ViewModel() {
                 return@launch
             }
             val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val result = repo.getHabitCategories(token)
+            val result = repo.getHabitCategories()
             if (result.isSuccess) {
                 val list = result.getOrNull().orEmpty()
                 Log.d("AddHabitVM", "getHabitCategories succeeded: count=${list.size}")
@@ -91,7 +91,7 @@ class AddHabitViewModel : ViewModel() {
                     goal = s.goal
                 )
                 Log.d("AddHabitVM", "Calling createHabit")
-                val result = repo.createHabit(token, dto)
+                val result = repo.createHabit(dto)
                 if (result.isSuccess) {
                     Log.d("AddHabitVM", "createHabit success")
                     _uiState.value = _uiState.value.copy(isLoading = false, isCreated = true)

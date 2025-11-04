@@ -45,15 +45,18 @@ fun ProfileScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
+    var hasLoadedOnce by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         viewModel.load(context)
+        hasLoadedOnce = true
     }
 
     // Refresh when returning to this screen (e.g., after editing profile image)
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(lifecycleOwner, hasLoadedOnce) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
+            if (event == Lifecycle.Event.ON_RESUME && hasLoadedOnce) {
                 viewModel.load(context)
             }
         }

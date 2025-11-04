@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 
 // Small UI model summarizing per-habit completion
 data class HabitProgressUi(
@@ -64,12 +66,14 @@ class ProfileViewModel : ViewModel() {
                     _uiState.value = _uiState.value.copy(isLoading = false, error = "You must be logged in.")
                     return@launch
                 }
-                // Load user's habits first
-                val habitsRes = scheduleRepo.getHabitsByUser(profile.id)
+                // Fetch habits and schedules in parallel to reduce wait time
+                val (habitsRes, schedulesRes) = coroutineScope {
+                    val a = async { scheduleRepo.getHabitsByUser(profile.id) }
+                    val b = async { scheduleRepo.getAllSchedules() }
+                    Pair(a.await(), b.await())
+                }
                 if (habitsRes.isSuccess) {
                     val habits = habitsRes.getOrNull().orEmpty()
-                    // Try to load all schedules to compute per-habit completion
-                    val schedulesRes = scheduleRepo.getAllSchedules()
                     val habitProgress = if (schedulesRes.isSuccess) {
                         val schedules = schedulesRes.getOrNull().orEmpty()
                         // Group schedules by habit id and compute completion counts and minutes

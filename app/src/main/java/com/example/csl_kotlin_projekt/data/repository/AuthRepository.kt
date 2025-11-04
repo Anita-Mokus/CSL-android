@@ -4,16 +4,14 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.example.csl_kotlin_projekt.data.api.AuthApiService
 import com.example.csl_kotlin_projekt.data.models.AuthResponseDto
-import com.example.csl_kotlin_projekt.data.models.SignInDto
-import com.example.csl_kotlin_projekt.data.models.SignUpDto
-import com.example.csl_kotlin_projekt.data.models.TokensDto
-import com.example.csl_kotlin_projekt.data.models.ProfileResponseDto
-import com.example.csl_kotlin_projekt.data.models.UpdateProfileDto
 import com.example.csl_kotlin_projekt.data.models.GoogleSignInDto
-import okhttp3.MultipartBody
+import com.example.csl_kotlin_projekt.data.models.ProfileResponseDto
+import com.example.csl_kotlin_projekt.data.models.SignInDto
+import com.example.csl_kotlin_projekt.data.models.UpdateProfileDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 
 class AuthRepository(

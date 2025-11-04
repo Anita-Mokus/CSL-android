@@ -12,6 +12,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import com.example.csl_kotlin_projekt.util.AppLog
 
 data class HomeUiState(
     val isLoading: Boolean = false,
@@ -40,6 +41,7 @@ data class HomeUiState(
 
 class HomeViewModel : ViewModel() {
 
+    init { AppLog.i("HomeViewModel", "init") }
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -228,5 +230,10 @@ class HomeViewModel : ViewModel() {
                 )
             }
         }
+    }
+
+    override fun onCleared() {
+        AppLog.i("HomeViewModel", "onCleared")
+        super.onCleared()
     }
 }

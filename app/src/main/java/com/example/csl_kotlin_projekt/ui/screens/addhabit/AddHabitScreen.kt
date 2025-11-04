@@ -12,6 +12,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -19,6 +20,7 @@ fun AddHabitScreen(
     onNavigateBack: () -> Unit,
     viewModel: AddHabitViewModel = viewModel()
 ) {
+    LogComposableLifecycle("AddHabitScreen")
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 

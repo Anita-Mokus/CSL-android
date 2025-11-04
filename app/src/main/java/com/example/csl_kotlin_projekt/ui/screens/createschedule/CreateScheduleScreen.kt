@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -30,6 +31,7 @@ fun CreateScheduleScreen(
     onNavigateToAddHabit: () -> Unit,
     viewModel: CreateScheduleViewModel = viewModel()
 ) {
+    LogComposableLifecycle("CreateScheduleScreen")
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 

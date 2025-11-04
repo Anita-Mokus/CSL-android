@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import java.util.Locale
+import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +53,7 @@ fun ScheduleDetailsScreen(
     onNavigateToEdit: (Int) -> Unit = {},
     viewModel: ScheduleDetailsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
+    LogComposableLifecycle("ScheduleDetailsScreen")
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import android.util.Patterns
+import com.example.csl_kotlin_projekt.util.AppLog
 
 data class RegisterUiState(
     val username: String = "",
@@ -25,7 +26,8 @@ data class RegisterUiState(
 )
 
 class RegisterViewModel : ViewModel() {
-    
+    init { AppLog.i("RegisterViewModel", "init") }
+
     private val _uiState = MutableStateFlow(RegisterUiState())
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
     
@@ -174,5 +176,10 @@ class RegisterViewModel : ViewModel() {
     
     fun resetRegistrationSuccess() {
         _uiState.value = _uiState.value.copy(isRegistrationSuccessful = false)
+    }
+
+    override fun onCleared() {
+        AppLog.i("RegisterViewModel", "onCleared")
+        super.onCleared()
     }
 }

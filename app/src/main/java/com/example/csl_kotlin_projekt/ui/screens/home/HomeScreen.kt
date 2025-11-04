@@ -31,6 +31,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import android.util.Base64
 import android.app.DatePickerDialog
+import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +43,7 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
+    LogComposableLifecycle("HomeScreen")
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     var showMenu by remember { mutableStateOf(false) }

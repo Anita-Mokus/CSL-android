@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.example.csl_kotlin_projekt.util.AppLog
 
 data class SplashUiState(
     val isLoading: Boolean = true,
@@ -18,7 +19,8 @@ data class SplashUiState(
 )
 
 class SplashViewModel : ViewModel() {
-    
+    init { AppLog.i("SplashViewModel", "init") }
+
     private val _uiState = MutableStateFlow(SplashUiState())
     val uiState: StateFlow<SplashUiState> = _uiState.asStateFlow()
     
@@ -72,5 +74,10 @@ class SplashViewModel : ViewModel() {
             shouldNavigateToLogin = false,
             error = null
         )
+    }
+
+    override fun onCleared() {
+        AppLog.i("SplashViewModel", "onCleared")
+        super.onCleared()
     }
 }

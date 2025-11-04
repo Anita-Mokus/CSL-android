@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.example.csl_kotlin_projekt.util.AppLog
 
 data class EditProfileUiState(
     val isLoading: Boolean = false,
@@ -24,6 +25,7 @@ data class EditProfileUiState(
 )
 
 class EditProfileViewModel : ViewModel() {
+    init { AppLog.i("EditProfileViewModel", "init") }
     private val _uiState = MutableStateFlow(EditProfileUiState())
     val uiState: StateFlow<EditProfileUiState> = _uiState.asStateFlow()
 
@@ -76,5 +78,9 @@ class EditProfileViewModel : ViewModel() {
             }
         }
     }
-}
 
+    override fun onCleared() {
+        AppLog.i("EditProfileViewModel", "onCleared")
+        super.onCleared()
+    }
+}

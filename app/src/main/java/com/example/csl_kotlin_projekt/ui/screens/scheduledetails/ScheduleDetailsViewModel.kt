@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.example.csl_kotlin_projekt.util.AppLog
 
 data class ScheduleDetailsUiState(
     val isLoading: Boolean = false,
@@ -25,6 +26,7 @@ data class ScheduleDetailsUiState(
 )
 
 class ScheduleDetailsViewModel : ViewModel() {
+    init { AppLog.i("ScheduleDetailsViewModel", "init") }
     private val _uiState = MutableStateFlow(ScheduleDetailsUiState())
     val uiState: StateFlow<ScheduleDetailsUiState> = _uiState.asStateFlow()
 
@@ -108,5 +110,10 @@ class ScheduleDetailsViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(deleting = false, error = result.exceptionOrNull()?.message ?: "Failed to delete schedule")
             }
         }
+    }
+
+    override fun onCleared() {
+        AppLog.i("ScheduleDetailsViewModel", "onCleared")
+        super.onCleared()
     }
 }

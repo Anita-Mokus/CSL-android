@@ -44,6 +44,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import java.io.InputStream
+import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +53,7 @@ fun EditProfileScreen(
     onSaved: () -> Unit,
     viewModel: EditProfileViewModel = viewModel()
 ) {
+    LogComposableLifecycle("EditProfileScreen")
     val context = LocalContext.current
     val uiState = viewModel.uiState.collectAsState()
 

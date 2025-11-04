@@ -32,6 +32,7 @@ import coil.compose.SubcomposeAsyncImageContent
 import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
 import com.example.csl_kotlin_projekt.data.repository.createAuthRepository
+import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +43,7 @@ fun ProfileScreen(
     onNavigateToEditProfile: () -> Unit,
     viewModel: ProfileViewModel = viewModel()
 ) {
+    LogComposableLifecycle("ProfileScreen")
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 

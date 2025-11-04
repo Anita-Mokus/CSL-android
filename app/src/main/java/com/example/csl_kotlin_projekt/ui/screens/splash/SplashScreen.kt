@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,6 +27,7 @@ fun SplashScreen(
     onNavigateToLogin: () -> Unit,
     viewModel: SplashViewModel = viewModel()
 ) {
+    LogComposableLifecycle("SplashScreen")
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     

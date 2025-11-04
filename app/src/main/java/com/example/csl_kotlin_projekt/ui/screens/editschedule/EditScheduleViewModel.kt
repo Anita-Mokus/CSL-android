@@ -16,6 +16,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
+import com.example.csl_kotlin_projekt.util.AppLog
 
 data class EditScheduleUiState(
     val isLoading: Boolean = false,
@@ -31,6 +32,7 @@ data class EditScheduleUiState(
 )
 
 class EditScheduleViewModel : ViewModel() {
+    init { AppLog.i("EditScheduleViewModel", "init") }
     private val _uiState = MutableStateFlow(EditScheduleUiState())
     val uiState: StateFlow<EditScheduleUiState> = _uiState.asStateFlow()
 
@@ -140,5 +142,10 @@ class EditScheduleViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(saving = false, error = result.exceptionOrNull()?.message ?: "Failed to update schedule")
             }
         }
+    }
+
+    override fun onCleared() {
+        AppLog.i("EditScheduleViewModel", "onCleared")
+        super.onCleared()
     }
 }

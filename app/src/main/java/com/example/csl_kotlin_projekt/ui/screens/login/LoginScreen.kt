@@ -35,6 +35,7 @@ import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes
 import android.app.Activity
+import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +45,7 @@ fun LoginScreen(
     onNavigateToForgotPassword: () -> Unit = {},
     viewModel: LoginViewModel = viewModel()
 ) {
+    LogComposableLifecycle("LoginScreen")
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val uiState by viewModel.uiState.collectAsState()

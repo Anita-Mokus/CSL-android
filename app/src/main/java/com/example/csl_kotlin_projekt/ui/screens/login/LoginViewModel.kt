@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import android.util.Patterns
 import android.util.Log
+import com.example.csl_kotlin_projekt.util.AppLog
 
 data class LoginUiState(
     val email: String = "",
@@ -22,7 +23,8 @@ data class LoginUiState(
 )
 
 class LoginViewModel : ViewModel() {
-    
+    init { AppLog.i("LoginViewModel", "init") }
+
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
     
@@ -131,5 +133,10 @@ class LoginViewModel : ViewModel() {
     
     fun resetLoginSuccess() {
         _uiState.value = _uiState.value.copy(isLoginSuccessful = false)
+    }
+
+    override fun onCleared() {
+        AppLog.i("LoginViewModel", "onCleared")
+        super.onCleared()
     }
 }

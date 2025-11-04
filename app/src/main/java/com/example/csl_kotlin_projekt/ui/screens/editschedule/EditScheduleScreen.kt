@@ -38,6 +38,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.csl_kotlin_projekt.data.models.ScheduleStatus
+import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +48,7 @@ fun EditScheduleScreen(
     onSaved: (updatedId: Int) -> Unit,
     viewModel: EditScheduleViewModel = viewModel()
 ) {
+    LogComposableLifecycle("EditScheduleScreen")
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
@@ -159,4 +161,3 @@ fun EditScheduleScreen(
         }
     }
 }
-

@@ -8,6 +8,7 @@ import com.example.csl_kotlin_projekt.data.models.HabitCategory
 import com.example.csl_kotlin_projekt.data.network.NetworkModule
 import com.example.csl_kotlin_projekt.data.repository.ScheduleRepository
 import com.example.csl_kotlin_projekt.data.repository.createAuthRepository
+import com.example.csl_kotlin_projekt.util.AppLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +27,7 @@ data class AddHabitUiState(
 )
 
 class AddHabitViewModel : ViewModel() {
+    init { AppLog.i("AddHabitViewModel", "init") }
     private val _uiState = MutableStateFlow(AddHabitUiState())
     val uiState: StateFlow<AddHabitUiState> = _uiState.asStateFlow()
 
@@ -105,5 +107,10 @@ class AddHabitViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "Unexpected error")
             }
         }
+    }
+
+    override fun onCleared() {
+        AppLog.i("AddHabitViewModel", "onCleared")
+        super.onCleared()
     }
 }

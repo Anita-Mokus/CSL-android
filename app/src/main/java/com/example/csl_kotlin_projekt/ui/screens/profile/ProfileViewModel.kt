@@ -9,13 +9,14 @@ import com.example.csl_kotlin_projekt.data.network.NetworkModule
 import com.example.csl_kotlin_projekt.data.repository.AuthRepository
 import com.example.csl_kotlin_projekt.data.repository.ScheduleRepository
 import com.example.csl_kotlin_projekt.data.repository.createAuthRepository
+import com.example.csl_kotlin_projekt.util.AppLog
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 
 // Small UI model summarizing per-habit completion
 data class HabitProgressUi(
@@ -48,6 +49,7 @@ data class ProfileUiState(
 )
 
 class ProfileViewModel : ViewModel() {
+    init { AppLog.i("ProfileViewModel", "init") }
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
@@ -139,5 +141,10 @@ class ProfileViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(loggingOut = false, error = res.exceptionOrNull()?.message ?: "Failed to logout")
             }
         }
+    }
+
+    override fun onCleared() {
+        AppLog.i("ProfileViewModel", "onCleared")
+        super.onCleared()
     }
 }

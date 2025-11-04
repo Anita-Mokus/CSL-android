@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.csl_kotlin_projekt.util.AppLog
 
 data class CreateScheduleUiState(
     val habits: List<HabitResponseDto> = emptyList(),
@@ -43,6 +44,7 @@ data class CreateScheduleUiState(
 
 class CreateScheduleViewModel : ViewModel() {
 
+    init { AppLog.i("CreateScheduleViewModel", "init") }
     private val _uiState = MutableStateFlow(CreateScheduleUiState())
     val uiState: StateFlow<CreateScheduleUiState> = _uiState.asStateFlow()
 
@@ -266,5 +268,10 @@ class CreateScheduleViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(isLoading = false, error = result.exceptionOrNull()?.message ?: "Failed to create weekday recurring schedules")
             }
         }
+    }
+
+    override fun onCleared() {
+        AppLog.i("CreateScheduleViewModel", "onCleared")
+        super.onCleared()
     }
 }

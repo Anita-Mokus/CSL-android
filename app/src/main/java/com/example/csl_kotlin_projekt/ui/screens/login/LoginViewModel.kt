@@ -23,7 +23,6 @@ data class LoginUiState(
 )
 
 class LoginViewModel : ViewModel() {
-    init { AppLog.i("LoginViewModel", "init") }
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
@@ -136,7 +135,7 @@ class LoginViewModel : ViewModel() {
     }
 
     override fun onCleared() {
-        AppLog.i("LoginViewModel", "onCleared")
+        AppLog.i("AL/LoginViewModel", "onCleared")
         super.onCleared()
     }
 }

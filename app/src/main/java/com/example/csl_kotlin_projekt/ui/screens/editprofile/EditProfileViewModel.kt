@@ -25,7 +25,7 @@ data class EditProfileUiState(
 )
 
 class EditProfileViewModel : ViewModel() {
-    init { AppLog.i("EditProfileViewModel", "init") }
+    init { AppLog.i("AL/EditProfileViewModel", "init") }
     private val _uiState = MutableStateFlow(EditProfileUiState())
     val uiState: StateFlow<EditProfileUiState> = _uiState.asStateFlow()
 
@@ -80,7 +80,7 @@ class EditProfileViewModel : ViewModel() {
     }
 
     override fun onCleared() {
-        AppLog.i("EditProfileViewModel", "onCleared")
+        AppLog.i("AL/EditProfileViewModel", "onCleared")
         super.onCleared()
     }
 }

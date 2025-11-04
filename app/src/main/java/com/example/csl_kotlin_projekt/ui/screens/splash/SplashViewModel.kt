@@ -19,7 +19,7 @@ data class SplashUiState(
 )
 
 class SplashViewModel : ViewModel() {
-    init { AppLog.i("SplashViewModel", "init") }
+    init { AppLog.i("AL/SplashViewModel", "init") }
 
     private val _uiState = MutableStateFlow(SplashUiState())
     val uiState: StateFlow<SplashUiState> = _uiState.asStateFlow()
@@ -77,7 +77,7 @@ class SplashViewModel : ViewModel() {
     }
 
     override fun onCleared() {
-        AppLog.i("SplashViewModel", "onCleared")
+        AppLog.i("AL/SplashViewModel", "onCleared")
         super.onCleared()
     }
 }

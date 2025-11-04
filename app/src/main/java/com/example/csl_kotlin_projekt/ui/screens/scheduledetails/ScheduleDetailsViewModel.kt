@@ -26,7 +26,7 @@ data class ScheduleDetailsUiState(
 )
 
 class ScheduleDetailsViewModel : ViewModel() {
-    init { AppLog.i("ScheduleDetailsViewModel", "init") }
+    init { AppLog.i("AL/ScheduleDetailsViewModel", "init") }
     private val _uiState = MutableStateFlow(ScheduleDetailsUiState())
     val uiState: StateFlow<ScheduleDetailsUiState> = _uiState.asStateFlow()
 
@@ -113,7 +113,7 @@ class ScheduleDetailsViewModel : ViewModel() {
     }
 
     override fun onCleared() {
-        AppLog.i("ScheduleDetailsViewModel", "onCleared")
+        AppLog.i("AL/ScheduleDetailsViewModel", "onCleared")
         super.onCleared()
     }
 }

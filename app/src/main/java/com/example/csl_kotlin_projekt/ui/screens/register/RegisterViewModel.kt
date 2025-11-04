@@ -26,7 +26,7 @@ data class RegisterUiState(
 )
 
 class RegisterViewModel : ViewModel() {
-    init { AppLog.i("RegisterViewModel", "init") }
+    init { AppLog.i("AL/RegisterViewModel", "init") }
 
     private val _uiState = MutableStateFlow(RegisterUiState())
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
@@ -179,7 +179,7 @@ class RegisterViewModel : ViewModel() {
     }
 
     override fun onCleared() {
-        AppLog.i("RegisterViewModel", "onCleared")
+        AppLog.i("AL/RegisterViewModel", "onCleared")
         super.onCleared()
     }
 }

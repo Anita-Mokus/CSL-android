@@ -32,7 +32,7 @@ data class EditScheduleUiState(
 )
 
 class EditScheduleViewModel : ViewModel() {
-    init { AppLog.i("EditScheduleViewModel", "init") }
+    init { AppLog.i("AL/EditScheduleViewModel", "init") }
     private val _uiState = MutableStateFlow(EditScheduleUiState())
     val uiState: StateFlow<EditScheduleUiState> = _uiState.asStateFlow()
 
@@ -145,7 +145,7 @@ class EditScheduleViewModel : ViewModel() {
     }
 
     override fun onCleared() {
-        AppLog.i("EditScheduleViewModel", "onCleared")
+        AppLog.i("AL/EditScheduleViewModel", "onCleared")
         super.onCleared()
     }
 }

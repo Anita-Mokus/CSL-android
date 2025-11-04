@@ -49,7 +49,7 @@ data class ProfileUiState(
 )
 
 class ProfileViewModel : ViewModel() {
-    init { AppLog.i("ProfileViewModel", "init") }
+    init { AppLog.i("AL/ProfileViewModel", "init") }
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
@@ -144,7 +144,7 @@ class ProfileViewModel : ViewModel() {
     }
 
     override fun onCleared() {
-        AppLog.i("ProfileViewModel", "onCleared")
+        AppLog.i("AL/ProfileViewModel", "onCleared")
         super.onCleared()
     }
 }

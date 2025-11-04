@@ -10,14 +10,18 @@ import com.example.csl_kotlin_projekt.util.AppLog
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        android.util.Log.i("AL/MainActivity", "========== MAINACTIVITY ONCREATE ==========")
         AppLog.i("MainActivity", "onCreate")
         super.onCreate(savedInstanceState)
+        android.util.Log.i("AL/MainActivity", "About to call enableEdgeToEdge")
         enableEdgeToEdge()
+        android.util.Log.i("AL/MainActivity", "About to setContent")
         setContent {
             CSLKotlinProjektTheme {
                 AppNavigation()
             }
         }
+        android.util.Log.i("AL/MainActivity", "onCreate finished")
     }
 
     override fun onStart() {
@@ -27,21 +31,21 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        AppLog.i("MainActivity", "onResume")
+        AppLog.i("AL/MainActivity", "onResume")
     }
 
     override fun onPause() {
-        AppLog.i("MainActivity", "onPause")
+        AppLog.i("AL/MainActivity", "onPause")
         super.onPause()
     }
 
     override fun onStop() {
-        AppLog.i("MainActivity", "onStop")
+        AppLog.i("AL/MainActivity", "onStop")
         super.onStop()
     }
 
     override fun onDestroy() {
-        AppLog.i("MainActivity", "onDestroy")
+        AppLog.i("AL/MainActivity", "onDestroy")
         super.onDestroy()
     }
 }

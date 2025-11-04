@@ -41,7 +41,7 @@ data class HomeUiState(
 
 class HomeViewModel : ViewModel() {
 
-    init { AppLog.i("HomeViewModel", "init") }
+    init { AppLog.i("AL/HomeViewModel", "init") }
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -233,7 +233,7 @@ class HomeViewModel : ViewModel() {
     }
 
     override fun onCleared() {
-        AppLog.i("HomeViewModel", "onCleared")
+        AppLog.i("AL/HomeViewModel", "onCleared")
         super.onCleared()
     }
 }

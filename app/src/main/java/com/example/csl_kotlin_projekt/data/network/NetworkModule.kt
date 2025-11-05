@@ -12,8 +12,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 
 object NetworkModule {
 
-    const val BASE_URL = "http://192.168.1.56:8080/"
-    //    private const val BASE_URL = "http://172.20.10.5:8080/"
+//    const val BASE_URL = "http://192.168.1.56:8080/"
+    const val BASE_URL = "http://172.20.10.5:8080/"
     @Volatile private var okHttpClient: OkHttpClient? = null
     @Volatile private var retrofit: Retrofit? = null
     @Volatile private var authApi: com.example.csl_kotlin_projekt.data.api.AuthApiService? = null

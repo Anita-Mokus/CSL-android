@@ -136,7 +136,7 @@ fun ProfileScreen(
                 else -> {
                     val p = uiState.profile
                     if (p != null) {
-                        // Replace username/email header with avatar + texts
+                        // Replazce username/email header with avatar + texts
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,

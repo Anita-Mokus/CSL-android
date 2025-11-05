@@ -35,12 +35,12 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onPause() {
-        AppLog.i("AL/MainActivity", "onPause")
+//        AppLog.i("AL/MainActivity", "onPause")
         super.onPause()
     }
 
     override fun onStop() {
-        AppLog.i("AL/MainActivity", "onStop")
+//        AppLog.i("AL/MainActivity", "onStop")
         super.onStop()
     }
 

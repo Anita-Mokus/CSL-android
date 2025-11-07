@@ -5,8 +5,8 @@ import com.example.csl_kotlin_projekt.data.api.ScheduleApiService
 import com.example.csl_kotlin_projekt.data.models.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
 import java.util.Date
+import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 
@@ -14,65 +14,24 @@ class ScheduleRepository(private val scheduleApiService: ScheduleApiService) {
 
     suspend fun getSchedulesByDay(date: Date?): Result<List<ScheduleResponseDto>> = withContext(Dispatchers.IO) {
         try {
-            // Attempt 1: yyyy-MM-dd (common simple date)
-            val dayFmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val d1 = date?.let { dayFmt.format(it) }
-            Log.d("ScheduleRepository", "Making get/schedule/day... attempt1 date=${d1 ?: "<none>"}")
-            val r1 = scheduleApiService.getSchedulesByDay(d1)
-            Log.d("ScheduleRepository", "getSchedulesByDay attempt1 code=${r1.code()} size=${r1.body()?.size ?: -1}")
-            if (r1.isSuccessful && !r1.body().isNullOrEmpty()) return@withContext Result.success(r1.body()!!)
-
-            // Attempt 2: ISO start-of-day in local TZ
-            if (date != null) {
-                val localStart = java.util.Calendar.getInstance().apply {
-                    time = date
-                    set(java.util.Calendar.HOUR_OF_DAY, 0)
-                    set(java.util.Calendar.MINUTE, 0)
-                    set(java.util.Calendar.SECOND, 0)
-                    set(java.util.Calendar.MILLISECOND, 0)
-                }.time
-                val isoLocal = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.getDefault()).apply {
+            val formatted = date?.let {
+                SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
                     timeZone = TimeZone.getDefault()
-                }.format(localStart)
-                Log.d("ScheduleRepository", "Making get/schedule/day... attempt2 date=$isoLocal")
-                val r2 = scheduleApiService.getSchedulesByDay(isoLocal)
-                Log.d("ScheduleRepository", "getSchedulesByDay attempt2 code=${r2.code()} size=${r2.body()?.size ?: -1}")
-                if (r2.isSuccessful && !r2.body().isNullOrEmpty()) return@withContext Result.success(r2.body()!!)
-
-                // Attempt 3: ISO start-of-day in UTC
-                val calUtc = java.util.Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-                    time = date
-                    set(java.util.Calendar.HOUR_OF_DAY, 0)
-                    set(java.util.Calendar.MINUTE, 0)
-                    set(java.util.Calendar.SECOND, 0)
-                    set(java.util.Calendar.MILLISECOND, 0)
-                }
-                val isoUtc = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).apply {
-                    timeZone = TimeZone.getTimeZone("UTC")
-                }.format(calUtc.time)
-                Log.d("ScheduleRepository", "Making get/schedule/day... attempt3 date=$isoUtc")
-                val r3 = scheduleApiService.getSchedulesByDay(isoUtc)
-                Log.d("ScheduleRepository", "getSchedulesByDay attempt3 code=${r3.code()} size=${r3.body()?.size ?: -1}")
-                if (r3.isSuccessful && !r3.body().isNullOrEmpty()) return@withContext Result.success(r3.body()!!)
+                }.format(it)
             }
+            Log.d("ScheduleRepository", "Making get/schedule/day date=${formatted ?: "<none>"}")
+            val response = scheduleApiService.getSchedulesByDay(formatted)
+            Log.d("ScheduleRepository", "getSchedulesByDay code=${response.code()} size=${response.body()?.size ?: -1}")
 
-            // Attempt 4: No date parameter - let server default to today
-            Log.d("ScheduleRepository", "Making get/schedule/day... attempt4 date=<none>")
-            val r4 = scheduleApiService.getSchedulesByDay(null)
-            Log.d("ScheduleRepository", "getSchedulesByDay attempt4 code=${r4.code()} size=${r4.body()?.size ?: -1}")
-            if (r4.isSuccessful && r4.body() != null) {
-                return@withContext Result.success(r4.body()!!)
-            }
-
-            // If none returned results, return the last failure or empty-success
-            val last = listOfNotNull(
-                r1.takeIf { !it.isSuccessful },
-                r1.takeIf { it.isSuccessful && it.body().isNullOrEmpty() },
-            ).lastOrNull()
-            if (last != null) {
-                Result.failure(Exception("Failed to fetch schedule: ${last.message()}"))
+            if (response.isSuccessful) {
+                val body = response.body()
+                return@withContext Result.success(body ?: emptyList())
             } else {
-                Result.success(emptyList())
+                val err = try { response.errorBody()?.string() } catch (_: Exception) { null }
+                if (!err.isNullOrBlank()) {
+                    Log.d("ScheduleRepository", "getSchedulesByDay errorBody=$err")
+                }
+                return@withContext Result.failure(Exception("Failed to fetch schedules for day: ${response.message()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -244,7 +203,7 @@ class ScheduleRepository(private val scheduleApiService: ScheduleApiService) {
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to create progress: ${response.message()}"))
+                Result.failure(Exception("Failed to create progress: ${response.message()}") )
             }
         } catch (e: Exception) {
             Result.failure(e)

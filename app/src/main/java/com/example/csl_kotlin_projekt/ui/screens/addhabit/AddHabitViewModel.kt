@@ -5,14 +5,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.csl_kotlin_projekt.data.models.CreateHabitDto
 import com.example.csl_kotlin_projekt.data.models.HabitCategory
-import com.example.csl_kotlin_projekt.data.network.NetworkModule
 import com.example.csl_kotlin_projekt.data.repository.ScheduleRepository
-import com.example.csl_kotlin_projekt.data.repository.createAuthRepository
+import com.example.csl_kotlin_projekt.data.repository.AuthRepository
 import com.example.csl_kotlin_projekt.util.AppLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import android.content.Context
+import androidx.lifecycle.ViewModelProvider
+import com.example.csl_kotlin_projekt.MyApp
 
 data class AddHabitUiState(
     val name: String = "",
@@ -26,7 +28,10 @@ data class AddHabitUiState(
     val selectedCategory: HabitCategory? = null,
 )
 
-class AddHabitViewModel : ViewModel() {
+class AddHabitViewModel(
+    private val authRepository: AuthRepository,
+    private val scheduleRepository: ScheduleRepository
+) : ViewModel() {
     init { AppLog.i("AddHabitViewModel", "init") }
     private val _uiState = MutableStateFlow(AddHabitUiState())
     val uiState: StateFlow<AddHabitUiState> = _uiState.asStateFlow()
@@ -44,19 +49,17 @@ class AddHabitViewModel : ViewModel() {
         )
     }
 
-    fun loadCategories(context: android.content.Context) {
+    fun loadCategories() {
         Log.d("AddHabitVM", "loadCategories called")
         viewModelScope.launch {
-            val authRepo = createAuthRepository(context)
-            val token = authRepo.getAccessToken()
+            val token = authRepository.getAccessToken()
             if (token.isNullOrBlank()) {
                 Log.w("AddHabitVM", "No access token found; cannot load categories")
                 // Don't block creation UI; just show error message
                 _uiState.value = _uiState.value.copy(error = "You must be logged in to load categories.")
                 return@launch
             }
-            val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val result = repo.getHabitCategories()
+            val result = scheduleRepository.getHabitCategories()
             if (result.isSuccess) {
                 val list = result.getOrNull().orEmpty()
                 Log.d("AddHabitVM", "getHabitCategories succeeded: count=${list.size}")
@@ -69,7 +72,7 @@ class AddHabitViewModel : ViewModel() {
         }
     }
 
-    fun createHabit(context: android.content.Context) {
+    fun createHabit() {
         val s = _uiState.value
         if (s.name.isBlank()) { _uiState.value = s.copy(error = "Name is required"); return }
         val catId = s.categoryId.toIntOrNull()
@@ -79,13 +82,11 @@ class AddHabitViewModel : ViewModel() {
         _uiState.value = s.copy(isLoading = true, error = null)
         viewModelScope.launch {
             try {
-                val authRepo = createAuthRepository(context)
-                val token = authRepo.getAccessToken()
+                val token = authRepository.getAccessToken()
                 if (token.isNullOrBlank()) {
                     _uiState.value = _uiState.value.copy(isLoading = false, error = "You must be logged in to create a habit.")
                     return@launch
                 }
-                val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
                 val dto = CreateHabitDto(
                     name = s.name,
                     description = s.description.ifBlank { null },
@@ -93,7 +94,7 @@ class AddHabitViewModel : ViewModel() {
                     goal = s.goal
                 )
                 Log.d("AddHabitVM", "Calling createHabit")
-                val result = repo.createHabit(dto)
+                val result = scheduleRepository.createHabit(dto)
                 if (result.isSuccess) {
                     Log.d("AddHabitVM", "createHabit success")
                     _uiState.value = _uiState.value.copy(isLoading = false, isCreated = true)
@@ -112,5 +113,16 @@ class AddHabitViewModel : ViewModel() {
     override fun onCleared() {
         AppLog.i("AddHabitViewModel", "onCleared")
         super.onCleared()
+    }
+
+    companion object {
+        fun factory(context: Context): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val app = context.applicationContext as MyApp
+                val c = app.container
+                @Suppress("UNCHECKED_CAST")
+                return AddHabitViewModel(c.authRepository, c.scheduleRepository) as T
+            }
+        }
     }
 }

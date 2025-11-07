@@ -7,9 +7,8 @@ import com.example.csl_kotlin_projekt.data.models.CreateCustomScheduleDto
 import com.example.csl_kotlin_projekt.data.models.CreateRecurringScheduleDto
 import com.example.csl_kotlin_projekt.data.models.CreateWeekdayRecurringScheduleDto
 import com.example.csl_kotlin_projekt.data.models.HabitResponseDto
-import com.example.csl_kotlin_projekt.data.network.NetworkModule
 import com.example.csl_kotlin_projekt.data.repository.ScheduleRepository
-import com.example.csl_kotlin_projekt.data.repository.createAuthRepository
+import com.example.csl_kotlin_projekt.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,6 +16,9 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import com.example.csl_kotlin_projekt.util.AppLog
+import android.content.Context
+import androidx.lifecycle.ViewModelProvider
+import com.example.csl_kotlin_projekt.MyApp
 
 data class CreateScheduleUiState(
     val habits: List<HabitResponseDto> = emptyList(),
@@ -24,36 +26,32 @@ data class CreateScheduleUiState(
     val startTime: Calendar = Calendar.getInstance(),
     val durationMinutes: String = "",
     val notes: String = "",
-    // Recurring fields
-    val repeatPattern: String = "none", // none|daily|weekdays|weekends
+    val repeatPattern: String = "none",
     val repeatDays: String = "30",
-    val daysOfWeek: Set<Int> = emptySet(), // 1..7
+    val daysOfWeek: Set<Int> = emptySet(),
     val numberOfWeeks: String = "4",
-
-    // Field-level errors
     val habitError: String? = null,
     val durationError: String? = null,
     val repeatPatternError: String? = null,
     val weekdaysError: String? = null,
-
-    // API/general error
     val error: String? = null,
     val isLoading: Boolean = false,
     val isScheduleCreated: Boolean = false
 )
 
-class CreateScheduleViewModel : ViewModel() {
+class CreateScheduleViewModel(
+    private val scheduleRepository: ScheduleRepository,
+    private val authRepository: AuthRepository
+) : ViewModel() {
 
     init { AppLog.i("AL/CreateScheduleViewModel", "init") }
     private val _uiState = MutableStateFlow(CreateScheduleUiState())
     val uiState: StateFlow<CreateScheduleUiState> = _uiState.asStateFlow()
 
-    fun loadHabits(context: android.content.Context) {
+    fun loadHabits() {
         Log.d("CreateScheduleVM", "loadHabits called")
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
-            val scheduleRepository = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val authRepository = createAuthRepository(context)
             val token = authRepository.getAccessToken()
             if (token.isNullOrBlank()) {
                 Log.w("CreateScheduleVM", "No access token found; cannot load habits")
@@ -122,7 +120,7 @@ class CreateScheduleViewModel : ViewModel() {
         return df.format(_uiState.value.startTime.time)
     }
 
-    fun createSchedule(context: android.content.Context) {
+    fun createSchedule() {
         val s = _uiState.value
         // Field checks
         if (s.selectedHabit == null) {
@@ -137,8 +135,6 @@ class CreateScheduleViewModel : ViewModel() {
 
         _uiState.value = s.copy(isLoading = true, error = null)
         viewModelScope.launch {
-            val scheduleRepository = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val authRepository = createAuthRepository(context)
             val token = authRepository.getAccessToken()
             if (token.isNullOrBlank()) {
                 _uiState.value = _uiState.value.copy(isLoading = false, error = "You must be logged in to create a schedule.")
@@ -162,7 +158,7 @@ class CreateScheduleViewModel : ViewModel() {
             if (result.isSuccess) {
                 _uiState.value = _uiState.value.copy(isLoading = false, isScheduleCreated = true)
             } else {
-                _uiState.value = _uiState.value.copy(isLoading = false, error = result.exceptionOrNull()?.message ?: "Failed to create schedule")
+                _uiState.value = _uiState.value.copy(isLoading = false, error = result.exceptionOrNull()?.message ?: "Failed to load habits")
             }
         }
     }
@@ -171,7 +167,7 @@ class CreateScheduleViewModel : ViewModel() {
     // Mon..Sat stay the same if backend uses 1..6, Sunday(7) becomes 0.
     private fun mapDaysForBackend(days: Collection<Int>): List<Int> = days.map { d -> if (d == 7) 0 else d }.sorted()
 
-    fun createRecurringSchedule(context: android.content.Context) {
+    fun createRecurringSchedule() {
         val s = _uiState.value
         if (s.selectedHabit == null) { _uiState.value = s.copy(habitError = "Please select a habit", error = null); return }
         if (s.repeatPattern == "none") { _uiState.value = s.copy(repeatPatternError = "Please choose a repeat pattern", error = null); return }
@@ -183,9 +179,8 @@ class CreateScheduleViewModel : ViewModel() {
 
         _uiState.value = s.copy(isLoading = true, error = null)
         viewModelScope.launch {
-            val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val token = createAuthRepository(context).getAccessToken()
-            if (token.isNullOrBlank()) { _uiState.value = _uiState.value.copy(isLoading = false, error = "You must be logged in."); return@launch }
+            val token = authRepository.getAccessToken()
+            if (token.isNullOrBlank()) { _uiState.value = s.copy(isLoading = false, error = "You must be logged in."); return@launch }
 
             val startIso = buildStartIso()
 
@@ -202,7 +197,7 @@ class CreateScheduleViewModel : ViewModel() {
                     participantIds = null,
                     notes = s.notes.takeIf { it.isNotBlank() }
                 )
-                val result = repo.createWeekdayRecurringSchedule(weekdayDto)
+                val result = scheduleRepository.createWeekdayRecurringSchedule(weekdayDto)
                 if (result.isSuccess) {
                     Log.d("CreateScheduleVM", "createWeekendRecurringSchedule via weekdays endpoint success count=${result.getOrNull()?.size}")
                     _uiState.value = _uiState.value.copy(isLoading = false, isScheduleCreated = true)
@@ -223,7 +218,7 @@ class CreateScheduleViewModel : ViewModel() {
                 participantIds = null,
                 notes = s.notes.takeIf { it.isNotBlank() }
             )
-            val result = repo.createRecurringSchedule(dto)
+            val result = scheduleRepository.createRecurringSchedule(dto)
             if (result.isSuccess) {
                 Log.d("CreateScheduleVM", "createRecurringSchedule success count=${result.getOrNull()?.size}")
                 _uiState.value = _uiState.value.copy(isLoading = false, isScheduleCreated = true)
@@ -233,7 +228,7 @@ class CreateScheduleViewModel : ViewModel() {
         }
     }
 
-    fun createWeekdayRecurringSchedule(context: android.content.Context) {
+    fun createWeekdayRecurringSchedule() {
         val s = _uiState.value
         if (s.selectedHabit == null) { _uiState.value = s.copy(habitError = "Please select a habit", error = null); return }
         if (s.daysOfWeek.isEmpty()) { _uiState.value = s.copy(weekdaysError = "Select at least one weekday", error = null); return }
@@ -245,8 +240,7 @@ class CreateScheduleViewModel : ViewModel() {
 
         _uiState.value = s.copy(isLoading = true, error = null)
         viewModelScope.launch {
-            val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val token = createAuthRepository(context).getAccessToken()
+            val token = authRepository.getAccessToken()
             if (token.isNullOrBlank()) { _uiState.value = s.copy(isLoading = false, error = "You must be logged in."); return@launch }
 
             val startIso = buildStartIso()
@@ -260,9 +254,8 @@ class CreateScheduleViewModel : ViewModel() {
                 participantIds = null,
                 notes = s.notes.takeIf { it.isNotBlank() }
             )
-            val result = repo.createWeekdayRecurringSchedule(dto)
+            val result = scheduleRepository.createWeekdayRecurringSchedule(dto)
             if (result.isSuccess) {
-                Log.d("CreateScheduleVM", "createWeekdayRecurringSchedule success count=${result.getOrNull()?.size}")
                 _uiState.value = _uiState.value.copy(isLoading = false, isScheduleCreated = true)
             } else {
                 _uiState.value = _uiState.value.copy(isLoading = false, error = result.exceptionOrNull()?.message ?: "Failed to create weekday recurring schedules")
@@ -273,5 +266,16 @@ class CreateScheduleViewModel : ViewModel() {
     override fun onCleared() {
         AppLog.i("AL/CreateScheduleViewModel", "onCleared")
         super.onCleared()
+    }
+
+    companion object {
+        fun factory(context: Context): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val app = context.applicationContext as MyApp
+                val c = app.container
+                @Suppress("UNCHECKED_CAST")
+                return CreateScheduleViewModel(c.scheduleRepository, c.authRepository) as T
+            }
+        }
     }
 }

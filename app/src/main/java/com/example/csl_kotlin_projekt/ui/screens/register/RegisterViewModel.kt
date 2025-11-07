@@ -2,14 +2,16 @@ package com.example.csl_kotlin_projekt.ui.screens.register
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.csl_kotlin_projekt.data.network.NetworkModule
-import com.example.csl_kotlin_projekt.data.repository.createAuthRepository
+import com.example.csl_kotlin_projekt.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import android.util.Patterns
 import com.example.csl_kotlin_projekt.util.AppLog
+import android.content.Context
+import androidx.lifecycle.ViewModelProvider
+import com.example.csl_kotlin_projekt.MyApp
 
 data class RegisterUiState(
     val username: String = "",
@@ -25,7 +27,7 @@ data class RegisterUiState(
     val isRegistrationSuccessful: Boolean = false
 )
 
-class RegisterViewModel : ViewModel() {
+class RegisterViewModel(private val authRepository: AuthRepository) : ViewModel() {
     init { AppLog.i("AL/RegisterViewModel", "init") }
 
     private val _uiState = MutableStateFlow(RegisterUiState())
@@ -64,10 +66,9 @@ class RegisterViewModel : ViewModel() {
         )
     }
     
-    fun register(context: android.content.Context, onSuccess: () -> Unit) {
+    fun register(onSuccess: () -> Unit) {
         val currentState = _uiState.value
         
-        // Clear previous errors
         _uiState.value = currentState.copy(
             usernameError = null,
             emailError = null,
@@ -76,7 +77,6 @@ class RegisterViewModel : ViewModel() {
             generalError = null
         )
         
-        // Validate inputs
         val usernameError = validateUsername(currentState.username)
         val emailError = validateEmail(currentState.email)
         val passwordError = validatePassword(currentState.password)
@@ -92,12 +92,10 @@ class RegisterViewModel : ViewModel() {
             return
         }
         
-        // Start registration process
         _uiState.value = currentState.copy(isLoading = true)
         
         viewModelScope.launch {
             try {
-                val authRepository = createAuthRepository(context)
                 val result = authRepository.signUp(
                     currentState.username,
                     currentState.email,
@@ -125,11 +123,10 @@ class RegisterViewModel : ViewModel() {
         }
     }
 
-    fun registerWithGoogle(context: android.content.Context, idToken: String, onSuccess: () -> Unit) {
+    fun registerWithGoogle(idToken: String, onSuccess: () -> Unit) {
         _uiState.value = _uiState.value.copy(generalError = null, isLoading = true)
         viewModelScope.launch {
-            val repo = createAuthRepository(context)
-            val result = repo.googleSignIn(idToken)
+            val result = authRepository.googleSignIn(idToken)
             if (result.isSuccess) {
                 _uiState.value = _uiState.value.copy(isLoading = false, isRegistrationSuccessful = true)
                 onSuccess()
@@ -181,5 +178,16 @@ class RegisterViewModel : ViewModel() {
     override fun onCleared() {
         AppLog.i("AL/RegisterViewModel", "onCleared")
         super.onCleared()
+    }
+
+    companion object {
+        fun factory(context: Context): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val app = context.applicationContext as MyApp
+                val c = app.container
+                @Suppress("UNCHECKED_CAST")
+                return RegisterViewModel(c.authRepository) as T
+            }
+        }
     }
 }

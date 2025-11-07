@@ -29,14 +29,14 @@ import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
 fun CreateScheduleScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAddHabit: () -> Unit,
-    viewModel: CreateScheduleViewModel = viewModel()
+    viewModel: CreateScheduleViewModel = viewModel(factory = CreateScheduleViewModel.factory(LocalContext.current))
 ) {
     LogComposableLifecycle("CreateScheduleScreen")
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.loadHabits(context)
+        viewModel.loadHabits()
     }
 
     LaunchedEffect(uiState.isScheduleCreated) {
@@ -219,9 +219,9 @@ fun CreateScheduleScreen(
             Button(
                 onClick = {
                     when {
-                        uiState.repeatPattern == "weekdays" -> viewModel.createWeekdayRecurringSchedule(context)
-                        uiState.repeatPattern != "none" -> viewModel.createRecurringSchedule(context)
-                        else -> viewModel.createSchedule(context)
+                        uiState.repeatPattern == "weekdays" -> viewModel.createWeekdayRecurringSchedule()
+                        uiState.repeatPattern != "none" -> viewModel.createRecurringSchedule()
+                        else -> viewModel.createSchedule()
                     }
                 },
                 enabled = canSubmit,

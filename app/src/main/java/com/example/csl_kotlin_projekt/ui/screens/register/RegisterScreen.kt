@@ -38,7 +38,7 @@ import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
 fun RegisterScreen(
     onNavigateToHome: () -> Unit,
     onNavigateToLogin: () -> Unit,
-    viewModel: RegisterViewModel = viewModel()
+    viewModel: RegisterViewModel = viewModel(factory = RegisterViewModel.factory(LocalContext.current))
 ) {
     LogComposableLifecycle("RegisterScreen")
     val context = LocalContext.current
@@ -68,7 +68,7 @@ fun RegisterScreen(
             val account = task.getResult(ApiException::class.java)
             val idTokenStr: String = account.idToken ?: ""
             if (idTokenStr.isNotBlank()) {
-                viewModel.registerWithGoogle(context, idTokenStr, onNavigateToHome)
+                viewModel.registerWithGoogle(idTokenStr, onNavigateToHome)
             }
         } catch (_: Exception) { /* ignore */ }
     }
@@ -276,7 +276,7 @@ fun RegisterScreen(
                 
                 // Register Button
                 Button(
-                    onClick = { viewModel.register(context, onNavigateToHome) },
+                    onClick = { viewModel.register(onNavigateToHome) },
                     enabled = !uiState.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 ) {

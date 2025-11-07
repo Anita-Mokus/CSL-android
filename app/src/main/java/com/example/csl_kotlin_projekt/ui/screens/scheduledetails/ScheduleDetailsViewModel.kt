@@ -4,13 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.csl_kotlin_projekt.data.models.ScheduleResponseDto
 import com.example.csl_kotlin_projekt.data.models.UpdateScheduleDto
-import com.example.csl_kotlin_projekt.data.network.NetworkModule
 import com.example.csl_kotlin_projekt.data.repository.ScheduleRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.example.csl_kotlin_projekt.util.AppLog
+import android.content.Context
+import androidx.lifecycle.ViewModelProvider
+import com.example.csl_kotlin_projekt.MyApp
 
 data class ScheduleDetailsUiState(
     val isLoading: Boolean = false,
@@ -25,16 +27,17 @@ data class ScheduleDetailsUiState(
     val deleted: Boolean = false
 )
 
-class ScheduleDetailsViewModel : ViewModel() {
+class ScheduleDetailsViewModel(
+    private val scheduleRepository: ScheduleRepository
+) : ViewModel() {
     init { AppLog.i("AL/ScheduleDetailsViewModel", "init") }
     private val _uiState = MutableStateFlow(ScheduleDetailsUiState())
     val uiState: StateFlow<ScheduleDetailsUiState> = _uiState.asStateFlow()
 
-    fun load(context: android.content.Context, id: Int) {
+    fun load(id: Int) {
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
-            val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val result = repo.getScheduleById(id)
+            val result = scheduleRepository.getScheduleById(id)
             if (result.isSuccess) {
                 _uiState.value = _uiState.value.copy(isLoading = false, schedule = result.getOrNull())
             } else {
@@ -60,7 +63,7 @@ class ScheduleDetailsViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(editingNotes = false, notesDraft = "", savingNotes = false)
     }
 
-    fun saveNotes(context: android.content.Context) {
+    fun saveNotes() {
         val current = _uiState.value
         val sched = current.schedule ?: run {
             _uiState.value = current.copy(error = "No schedule loaded")
@@ -68,9 +71,8 @@ class ScheduleDetailsViewModel : ViewModel() {
         }
         _uiState.value = current.copy(savingNotes = true, error = null)
         viewModelScope.launch {
-            val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
             val dto = UpdateScheduleDto(notes = _uiState.value.notesDraft)
-            val result = repo.updateSchedule(sched.id, dto)
+            val result = scheduleRepository.updateSchedule(sched.id, dto)
             if (result.isSuccess) {
                 val updated = result.getOrNull()!!
                 _uiState.value = _uiState.value.copy(
@@ -95,15 +97,14 @@ class ScheduleDetailsViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(showDeleteConfirm = false)
     }
 
-    fun confirmDelete(context: android.content.Context) {
+    fun confirmDelete() {
         val s = _uiState.value.schedule ?: run {
             _uiState.value = _uiState.value.copy(error = "No schedule loaded")
             return
         }
         _uiState.value = _uiState.value.copy(deleting = true, showDeleteConfirm = false, error = null)
         viewModelScope.launch {
-            val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val result = repo.deleteSchedule(s.id)
+            val result = scheduleRepository.deleteSchedule(s.id)
             if (result.isSuccess) {
                 _uiState.value = _uiState.value.copy(deleting = false, deleted = true)
             } else {
@@ -115,5 +116,16 @@ class ScheduleDetailsViewModel : ViewModel() {
     override fun onCleared() {
         AppLog.i("AL/ScheduleDetailsViewModel", "onCleared")
         super.onCleared()
+    }
+
+    companion object {
+        fun factory(context: Context): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val app = context.applicationContext as MyApp
+                val c = app.container
+                @Suppress("UNCHECKED_CAST")
+                return ScheduleDetailsViewModel(c.scheduleRepository) as T
+            }
+        }
     }
 }

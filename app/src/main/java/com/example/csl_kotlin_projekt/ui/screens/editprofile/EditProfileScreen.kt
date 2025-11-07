@@ -51,14 +51,14 @@ import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
 fun EditProfileScreen(
     onNavigateBack: () -> Unit,
     onSaved: () -> Unit,
-    viewModel: EditProfileViewModel = viewModel()
+    viewModel: EditProfileViewModel = viewModel(factory = EditProfileViewModel.factory(LocalContext.current))
 ) {
     LogComposableLifecycle("EditProfileScreen")
     val context = LocalContext.current
     val uiState = viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.load(context)
+        viewModel.load()
     }
 
     // On save success -> exit
@@ -80,7 +80,7 @@ fun EditProfileScreen(
             }
             val bytes = readAllBytes(context.contentResolver.openInputStream(uri))
             if (bytes != null) {
-                viewModel.uploadImage(context, bytes, name, mimeType)
+                viewModel.uploadImage(bytes, name, mimeType)
             }
         }
     }
@@ -96,7 +96,7 @@ fun EditProfileScreen(
                 },
                 actions = {
                     val disabled = uiState.value.saving || uiState.value.uploading || uiState.value.isLoading
-                    IconButton(onClick = { viewModel.saveUsername(context) }, enabled = !disabled) {
+                    IconButton(onClick = { viewModel.saveUsername() }, enabled = !disabled) {
                         Icon(Icons.Filled.Check, contentDescription = "Save")
                     }
                 }
@@ -163,7 +163,7 @@ fun EditProfileScreen(
             )
 
             Button(
-                onClick = { viewModel.saveUsername(context) },
+                onClick = { viewModel.saveUsername() },
                 enabled = !uiState.value.saving && !uiState.value.uploading,
                 modifier = Modifier.fillMaxWidth()
             ) {

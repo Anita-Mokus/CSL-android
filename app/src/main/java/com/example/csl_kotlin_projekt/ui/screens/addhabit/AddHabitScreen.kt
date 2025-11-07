@@ -2,14 +2,12 @@ package com.example.csl_kotlin_projekt.ui.screens.addhabit
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
@@ -18,14 +16,13 @@ import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
 @Composable
 fun AddHabitScreen(
     onNavigateBack: () -> Unit,
-    viewModel: AddHabitViewModel = viewModel()
+    viewModel: AddHabitViewModel = viewModel(factory = AddHabitViewModel.factory(LocalContext.current))
 ) {
     LogComposableLifecycle("AddHabitScreen")
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        viewModel.loadCategories(context)
+        viewModel.loadCategories()
     }
 
     LaunchedEffect(uiState.isCreated) {
@@ -38,7 +35,7 @@ fun AddHabitScreen(
                 title = { Text("Add Habit") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -109,7 +106,7 @@ fun AddHabitScreen(
             }
 
             Button(
-                onClick = { viewModel.createHabit(context) },
+                onClick = { viewModel.createHabit() },
                 enabled = !uiState.isLoading,
                 modifier = Modifier.fillMaxWidth()
             ) {

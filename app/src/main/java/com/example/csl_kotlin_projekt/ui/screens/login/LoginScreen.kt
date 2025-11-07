@@ -43,7 +43,7 @@ fun LoginScreen(
     onNavigateToHome: () -> Unit,
     onNavigateToRegister: () -> Unit = {},
     onNavigateToForgotPassword: () -> Unit = {},
-    viewModel: LoginViewModel = viewModel()
+    viewModel: LoginViewModel = viewModel(factory = LoginViewModel.factory(LocalContext.current))
 ) {
     LogComposableLifecycle("LoginScreen")
     val context = LocalContext.current
@@ -77,7 +77,7 @@ fun LoginScreen(
             val account = task.getResult(ApiException::class.java)
             val idTokenStr: String = account.idToken ?: ""
             if (idTokenStr.isNotBlank()) {
-                viewModel.loginWithGoogle(context, idTokenStr, onNavigateToHome)
+                viewModel.loginWithGoogle(idTokenStr, onNavigateToHome)
             } else {
                 viewModel.setGeneralError("Google returned no ID token. Ensure you used the WEB client ID in strings.xml and that the account has Google Play Services.")
             }
@@ -239,7 +239,7 @@ fun LoginScreen(
                 
                 // Login Button
                 Button(
-                    onClick = { viewModel.login(context, onNavigateToHome) },
+                    onClick = { viewModel.login(onNavigateToHome) },
                     enabled = !uiState.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 ) {

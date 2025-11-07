@@ -2,14 +2,16 @@ package com.example.csl_kotlin_projekt.ui.screens.splash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.csl_kotlin_projekt.data.network.NetworkModule
-import com.example.csl_kotlin_projekt.data.repository.createAuthRepository
+import com.example.csl_kotlin_projekt.data.repository.AuthRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.example.csl_kotlin_projekt.util.AppLog
+import android.content.Context
+import androidx.lifecycle.ViewModelProvider
+import com.example.csl_kotlin_projekt.MyApp
 
 data class SplashUiState(
     val isLoading: Boolean = true,
@@ -18,19 +20,17 @@ data class SplashUiState(
     val error: String? = null
 )
 
-class SplashViewModel : ViewModel() {
+class SplashViewModel(private val authRepository: AuthRepository) : ViewModel() {
     init { AppLog.i("AL/SplashViewModel", "init") }
 
     private val _uiState = MutableStateFlow(SplashUiState())
     val uiState: StateFlow<SplashUiState> = _uiState.asStateFlow()
     
-    fun checkAutoLogin(context: android.content.Context) {
+    fun checkAutoLogin() {
         viewModelScope.launch {
             try {
                 // Minimum 3 seconds splash duration
                 delay(3000)
-                
-                val authRepository = createAuthRepository(context)
                 
                 if (!authRepository.isLoggedIn()) {
                     _uiState.value = _uiState.value.copy(
@@ -79,5 +79,16 @@ class SplashViewModel : ViewModel() {
     override fun onCleared() {
         AppLog.i("AL/SplashViewModel", "onCleared")
         super.onCleared()
+    }
+
+    companion object {
+        fun factory(context: Context): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val app = context.applicationContext as MyApp
+                val c = app.container
+                @Suppress("UNCHECKED_CAST")
+                return SplashViewModel(c.authRepository) as T
+            }
+        }
     }
 }

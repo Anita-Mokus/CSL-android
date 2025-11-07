@@ -39,6 +39,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
@@ -51,14 +52,14 @@ fun ScheduleDetailsScreen(
     scheduleId: Int,
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (Int) -> Unit = {},
-    viewModel: ScheduleDetailsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    viewModel: ScheduleDetailsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = ScheduleDetailsViewModel.factory(LocalContext.current))
 ) {
     LogComposableLifecycle("ScheduleDetailsScreen")
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(scheduleId) {
-        viewModel.load(context, scheduleId)
+        viewModel.load(scheduleId)
     }
 
     Scaffold(
@@ -100,7 +101,7 @@ fun ScheduleDetailsScreen(
                 title = { Text("Delete schedule") },
                 text = { Text("Are you sure?") },
                 confirmButton = {
-                    TextButton(onClick = { viewModel.confirmDelete(context) }, enabled = !uiState.deleting) {
+                    TextButton(onClick = { viewModel.confirmDelete() }, enabled = !uiState.deleting) {
                         Text(if (uiState.deleting) "Deleting..." else "Delete")
                     }
                 },
@@ -167,7 +168,7 @@ fun ScheduleDetailsScreen(
                         )
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Button(onClick = { viewModel.saveNotes(context) }, enabled = !uiState.savingNotes) {
+                            Button(onClick = { viewModel.saveNotes() }, enabled = !uiState.savingNotes) {
                                 Text(if (uiState.savingNotes) "Saving..." else "Save")
                             }
                             TextButton(onClick = { viewModel.cancelEditNotes() }, enabled = !uiState.savingNotes) {

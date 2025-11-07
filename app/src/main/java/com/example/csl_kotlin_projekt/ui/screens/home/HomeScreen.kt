@@ -41,7 +41,7 @@ fun HomeScreen(
     onNavigateToAddHabit: () -> Unit = {},
     onNavigateToScheduleDetails: (Int) -> Unit,
     onNavigateToProfile: () -> Unit,
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel(factory = HomeViewModel.factory(LocalContext.current))
 ) {
     LogComposableLifecycle("HomeScreen")
     val context = LocalContext.current
@@ -54,8 +54,8 @@ fun HomeScreen(
 
     // Load user info and schedule when screen is first displayed
     LaunchedEffect(Unit) {
-        viewModel.loadUserInfo(context)
-        viewModel.loadSchedule(context, selectedDate)
+        viewModel.loadUserInfo()
+        viewModel.loadSchedule(selectedDate)
     }
 
     // Reload schedule whenever the screen resumes (e.g., after creating a schedule)
@@ -63,8 +63,8 @@ fun HomeScreen(
     DisposableEffect(lifecycleOwner, selectedDate) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.loadSchedule(context, selectedDate)
-                viewModel.loadUserInfo(context) // refresh profile image if changed
+                viewModel.loadSchedule(selectedDate)
+                viewModel.loadUserInfo() // refresh profile image if changed
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -124,7 +124,7 @@ fun HomeScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { viewModel.submitProgress(context) }, enabled = !uiState.progressSubmitting) {
+                TextButton(onClick = { viewModel.submitProgress() }, enabled = !uiState.progressSubmitting) {
                     if (uiState.progressSubmitting) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp))
                     } else {
@@ -249,7 +249,7 @@ fun HomeScreen(
                             .clickable { datePickerDialog.show() }
                     )
                 }
-                Button(onClick = { viewModel.loadSchedule(context, selectedDate) }, enabled = !uiState.isLoading) {
+                Button(onClick = { viewModel.loadSchedule(selectedDate) }, enabled = !uiState.isLoading) {
                     Text("Filter")
                 }
             }
@@ -299,7 +299,7 @@ fun HomeScreen(
                     ScheduleItem(
                         schedule = schedule,
                         onLogProgress = { viewModel.openProgressDialog(schedule.id) },
-                        onToggleCompleted = { checked -> viewModel.toggleScheduleCompleted(context, schedule.id, checked) },
+                        onToggleCompleted = { checked -> viewModel.toggleScheduleCompleted(schedule.id, checked) },
                         isToggling = uiState.togglingScheduleIds.contains(schedule.id),
                         desiredCompleted = uiState.togglingDesired[schedule.id],
                         onOpenDetails = { onNavigateToScheduleDetails(schedule.id) }

@@ -1,6 +1,5 @@
 package com.example.csl_kotlin_projekt.ui.screens.splash
 
-import android.content.Context
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -25,7 +24,7 @@ import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
 fun SplashScreen(
     onNavigateToHome: () -> Unit,
     onNavigateToLogin: () -> Unit,
-    viewModel: SplashViewModel = viewModel()
+    viewModel: SplashViewModel = viewModel(factory = SplashViewModel.factory(LocalContext.current))
 ) {
     LogComposableLifecycle("SplashScreen")
     val context = LocalContext.current
@@ -37,9 +36,9 @@ fun SplashScreen(
     
     // Start animations when composable is first created
     LaunchedEffect(Unit) {
-        // Start auto-login check
-        viewModel.checkAutoLogin(context)
-        
+        // Start auto-login check (no context needed now)
+        viewModel.checkAutoLogin()
+
         // Start animations
         alphaAnimatable.animateTo(
             targetValue = 1f,

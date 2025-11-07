@@ -46,14 +46,14 @@ fun EditScheduleScreen(
     scheduleId: Int,
     onNavigateBack: () -> Unit,
     onSaved: (updatedId: Int) -> Unit,
-    viewModel: EditScheduleViewModel = viewModel()
+    viewModel: EditScheduleViewModel = viewModel(factory = EditScheduleViewModel.factory(LocalContext.current))
 ) {
     LogComposableLifecycle("EditScheduleScreen")
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(scheduleId) {
-        viewModel.load(context, scheduleId)
+        viewModel.load(scheduleId)
     }
 
     Scaffold(
@@ -148,7 +148,7 @@ fun EditScheduleScreen(
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(onClick = {
-                    viewModel.save(context) { updated ->
+                    viewModel.save { updated ->
                         onSaved(updated.id)
                     }
                 }, enabled = !uiState.saving) {

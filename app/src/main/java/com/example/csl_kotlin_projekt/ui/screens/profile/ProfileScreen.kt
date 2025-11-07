@@ -31,7 +31,7 @@ import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
-import com.example.csl_kotlin_projekt.data.repository.createAuthRepository
+import com.example.csl_kotlin_projekt.MyApp
 import com.example.csl_kotlin_projekt.util.LogComposableLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,7 +41,7 @@ fun ProfileScreen(
     onNavigateToAddHabit: () -> Unit,
     onLoggedOut: () -> Unit,
     onNavigateToEditProfile: () -> Unit,
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.factory(LocalContext.current))
 ) {
     LogComposableLifecycle("ProfileScreen")
     val context = LocalContext.current
@@ -50,7 +50,7 @@ fun ProfileScreen(
     var hasLoadedOnce by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        viewModel.load(context)
+        viewModel.load()
         hasLoadedOnce = true
     }
 
@@ -59,7 +59,7 @@ fun ProfileScreen(
     DisposableEffect(lifecycleOwner, hasLoadedOnce) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME && hasLoadedOnce) {
-                viewModel.load(context)
+                viewModel.load()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -78,7 +78,7 @@ fun ProfileScreen(
             title = { Text("Logout") },
             text = { Text("Are you sure you want to logout?") },
             confirmButton = {
-                TextButton(onClick = { viewModel.confirmLogout(context) }, enabled = !uiState.loggingOut) {
+                TextButton(onClick = { viewModel.confirmLogout() }, enabled = !uiState.loggingOut) {
                     Text(if (uiState.loggingOut) "Logging out..." else "Logout")
                 }
             },
@@ -136,14 +136,14 @@ fun ProfileScreen(
                 else -> {
                     val p = uiState.profile
                     if (p != null) {
-                        // Replazce username/email header with avatar + texts
+                        // Replace username/email header with avatar + texts
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            val context = LocalContext.current
-                            val token = remember(context) { createAuthRepository(context).getAccessToken() }
+                            val app = context.applicationContext as MyApp
+                            val token = remember { app.container.authRepository.getAccessToken() }
 
                             // Build model like Home: prefer URL (with cache-busting), else decode base64 to bytes
                             val profileImageModel = remember(p.profileImageUrl, p.profileImageBase64, p.updatedAt) {

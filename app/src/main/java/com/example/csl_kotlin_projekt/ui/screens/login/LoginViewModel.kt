@@ -2,8 +2,7 @@ package com.example.csl_kotlin_projekt.ui.screens.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.csl_kotlin_projekt.data.network.NetworkModule
-import com.example.csl_kotlin_projekt.data.repository.createAuthRepository
+import com.example.csl_kotlin_projekt.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,6 +10,9 @@ import kotlinx.coroutines.launch
 import android.util.Patterns
 import android.util.Log
 import com.example.csl_kotlin_projekt.util.AppLog
+import android.content.Context
+import androidx.lifecycle.ViewModelProvider
+import com.example.csl_kotlin_projekt.MyApp
 
 data class LoginUiState(
     val email: String = "",
@@ -22,7 +24,7 @@ data class LoginUiState(
     val isLoginSuccessful: Boolean = false
 )
 
-class LoginViewModel : ViewModel() {
+class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
@@ -48,17 +50,15 @@ class LoginViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(generalError = message)
     }
 
-    fun login(context: android.content.Context, onSuccess: () -> Unit) {
+    fun login(onSuccess: () -> Unit) {
         val currentState = _uiState.value
         
-        // Clear previous errors
         _uiState.value = currentState.copy(
             emailError = null,
             passwordError = null,
             generalError = null
         )
         
-        // Validate inputs
         val emailError = validateEmail(currentState.email)
         val passwordError = validatePassword(currentState.password)
         
@@ -70,12 +70,10 @@ class LoginViewModel : ViewModel() {
             return
         }
         
-        // Start login process
         _uiState.value = currentState.copy(isLoading = true)
         
         viewModelScope.launch {
             try {
-                val authRepository = createAuthRepository(context)
                 val result = authRepository.signIn(currentState.email, currentState.password)
                 
                 if (result.isSuccess) {
@@ -99,12 +97,10 @@ class LoginViewModel : ViewModel() {
         }
     }
 
-    fun loginWithGoogle(context: android.content.Context, idToken: String, onSuccess: () -> Unit) {
-        // Clear previous errors and set loading
+    fun loginWithGoogle(idToken: String, onSuccess: () -> Unit) {
         _uiState.value = _uiState.value.copy(generalError = null, isLoading = true)
         viewModelScope.launch {
-            val repo = createAuthRepository(context)
-            val result = repo.googleSignIn(idToken)
+            val result = authRepository.googleSignIn(idToken)
             if (result.isSuccess) {
                 _uiState.value = _uiState.value.copy(isLoading = false, isLoginSuccessful = true)
                 onSuccess()
@@ -137,5 +133,16 @@ class LoginViewModel : ViewModel() {
     override fun onCleared() {
         AppLog.i("AL/LoginViewModel", "onCleared")
         super.onCleared()
+    }
+
+    companion object {
+        fun factory(context: Context): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val app = context.applicationContext as MyApp
+                val c = app.container
+                @Suppress("UNCHECKED_CAST")
+                return LoginViewModel(c.authRepository) as T
+            }
+        }
     }
 }

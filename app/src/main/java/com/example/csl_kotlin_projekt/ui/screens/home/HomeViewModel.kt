@@ -1,9 +1,8 @@
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.csl_kotlin_projekt.data.models.ScheduleResponseDto
-import com.example.csl_kotlin_projekt.data.network.NetworkModule
 import com.example.csl_kotlin_projekt.data.repository.ScheduleRepository
-import com.example.csl_kotlin_projekt.data.repository.createAuthRepository
+import com.example.csl_kotlin_projekt.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,6 +12,9 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 import com.example.csl_kotlin_projekt.util.AppLog
+import android.content.Context
+import androidx.lifecycle.ViewModelProvider
+import com.example.csl_kotlin_projekt.MyApp
 
 data class HomeUiState(
     val isLoading: Boolean = false,
@@ -39,17 +41,18 @@ data class HomeUiState(
     val togglingDesired: Map<Int, Boolean> = emptyMap()
 )
 
-class HomeViewModel : ViewModel() {
+class HomeViewModel(
+    private val authRepository: AuthRepository,
+    private val scheduleRepository: ScheduleRepository
+) : ViewModel() {
 
     init { AppLog.i("AL/HomeViewModel", "init") }
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    fun loadSchedule(context: android.content.Context, date: Date? = Date()) {
+    fun loadSchedule(date: Date? = Date()) {
         _uiState.value = _uiState.value.copy(isLoading = true, scheduleError = null, currentDate = date ?: Date())
         viewModelScope.launch {
-            val scheduleRepository = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val authRepository = createAuthRepository(context)
             val token = authRepository.getAccessToken()
             if (token.isNullOrBlank()) {
                 _uiState.value = _uiState.value.copy(
@@ -59,7 +62,6 @@ class HomeViewModel : ViewModel() {
                 return@launch
             }
 
-            // Use server-side filtered by day
             val result = scheduleRepository.getSchedulesByDay(date)
             if (result.isSuccess) {
                 val list = result.getOrNull().orEmpty().sortedBy { it.startTime }
@@ -76,10 +78,8 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    fun loadUserInfo(context: android.content.Context) {
+    fun loadUserInfo() {
         viewModelScope.launch {
-            val authRepository = createAuthRepository(context)
-            // Try to fetch fresh profile for image and authoritative username/email
             val res = authRepository.getProfile()
             if (res.isSuccess) {
                 val p = res.getOrNull()!!
@@ -90,7 +90,6 @@ class HomeViewModel : ViewModel() {
                     profileImageBase64 = p.profileImageBase64
                 )
             } else {
-                // Fallback to cached prefs for username/email; no image available
                 _uiState.value = _uiState.value.copy(
                     username = authRepository.getUsername(),
                     email = authRepository.getEmail(),
@@ -101,10 +100,9 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    fun logout(context: android.content.Context) {
+    fun logout() {
         _uiState.value = _uiState.value.copy(isLoading = true, logoutError = null)
         viewModelScope.launch {
-            val authRepository = createAuthRepository(context)
             val result = authRepository.logout()
             if (result.isSuccess) {
                 _uiState.value = _uiState.value.copy(isLoading = false, isLogoutSuccessful = true)
@@ -144,13 +142,12 @@ class HomeViewModel : ViewModel() {
     fun updateProgressNotes(v: String) { _uiState.value = _uiState.value.copy(progressNotes = v, progressError = null) }
     fun toggleProgressCompleted() { _uiState.value = _uiState.value.copy(progressCompleted = !_uiState.value.progressCompleted) }
 
-    fun submitProgress(context: android.content.Context) {
+    fun submitProgress() {
         val s = _uiState.value
         val scheduleId = s.progressScheduleId ?: run {
             _uiState.value = s.copy(progressError = "No schedule selected")
             return
         }
-        // Validate logged time if provided
         if (s.progressLoggedTime.isNotBlank()) {
             val n = s.progressLoggedTime.toIntOrNull()
             if (n == null || n < 0) {
@@ -161,14 +158,11 @@ class HomeViewModel : ViewModel() {
 
         _uiState.value = s.copy(progressSubmitting = true, progressError = null)
         viewModelScope.launch {
-            val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val auth = createAuthRepository(context)
-            val token = auth.getAccessToken()
+            val token = authRepository.getAccessToken()
             if (token.isNullOrBlank()) {
                 _uiState.value = _uiState.value.copy(progressSubmitting = false, progressError = "You must be logged in.")
                 return@launch
             }
-            // Use current local time ISO for the progress date
             val nowIso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.getDefault()).apply {
                 timeZone = TimeZone.getDefault()
             }.format(Date())
@@ -179,10 +173,9 @@ class HomeViewModel : ViewModel() {
                 notes = s.progressNotes.takeIf { it.isNotBlank() },
                 isCompleted = s.progressCompleted
             )
-            val result = repo.createProgress(dto)
+            val result = scheduleRepository.createProgress(dto)
             if (result.isSuccess) {
-                // Refresh schedules for the currently selected day and close dialog
-                loadSchedule(context, _uiState.value.currentDate)
+                loadSchedule(_uiState.value.currentDate)
                 _uiState.value = _uiState.value.copy(progressSubmitting = false, showProgressDialog = false)
             } else {
                 _uiState.value = _uiState.value.copy(progressSubmitting = false, progressError = result.exceptionOrNull()?.message ?: "Failed to add progress")
@@ -190,15 +183,13 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    fun toggleScheduleCompleted(context: android.content.Context, scheduleId: Int, newCompleted: Boolean) {
-        // mark as toggling to disable the checkbox and set desired state optimistically
+    fun toggleScheduleCompleted(scheduleId: Int, newCompleted: Boolean) {
         _uiState.value = _uiState.value.copy(
             togglingScheduleIds = _uiState.value.togglingScheduleIds + scheduleId,
             togglingDesired = _uiState.value.togglingDesired + (scheduleId to newCompleted)
         )
         viewModelScope.launch {
-            val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val token = createAuthRepository(context).getAccessToken()
+            val token = authRepository.getAccessToken()
             if (token.isNullOrBlank()) {
                 _uiState.value = _uiState.value.copy(
                     scheduleError = "You must be logged in.",
@@ -215,9 +206,9 @@ class HomeViewModel : ViewModel() {
                 date = nowIso,
                 isCompleted = newCompleted
             )
-            val result = repo.createProgress(dto)
+            val result = scheduleRepository.createProgress(dto)
             if (result.isSuccess) {
-                loadSchedule(context, _uiState.value.currentDate)
+                loadSchedule(_uiState.value.currentDate)
                 _uiState.value = _uiState.value.copy(
                     togglingScheduleIds = _uiState.value.togglingScheduleIds - scheduleId,
                     togglingDesired = _uiState.value.togglingDesired - scheduleId
@@ -235,5 +226,16 @@ class HomeViewModel : ViewModel() {
     override fun onCleared() {
         AppLog.i("AL/HomeViewModel", "onCleared")
         super.onCleared()
+    }
+
+    companion object {
+        fun factory(context: Context): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val app = context.applicationContext as MyApp
+                val c = app.container
+                @Suppress("UNCHECKED_CAST")
+                return HomeViewModel(c.authRepository, c.scheduleRepository) as T
+            }
+        }
     }
 }

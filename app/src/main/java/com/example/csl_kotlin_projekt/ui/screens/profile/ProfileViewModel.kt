@@ -5,10 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.csl_kotlin_projekt.data.models.HabitResponseDto
 import com.example.csl_kotlin_projekt.data.models.ProfileResponseDto
 import com.example.csl_kotlin_projekt.data.models.ScheduleStatus
-import com.example.csl_kotlin_projekt.data.network.NetworkModule
 import com.example.csl_kotlin_projekt.data.repository.AuthRepository
 import com.example.csl_kotlin_projekt.data.repository.ScheduleRepository
-import com.example.csl_kotlin_projekt.data.repository.createAuthRepository
 import com.example.csl_kotlin_projekt.util.AppLog
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -17,8 +15,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
+import android.content.Context
+import androidx.lifecycle.ViewModelProvider
+import com.example.csl_kotlin_projekt.MyApp
 
-// Small UI model summarizing per-habit completion
 data class HabitProgressUi(
     val habit: HabitResponseDto,
     val totalSchedules: Int,
@@ -48,30 +48,30 @@ data class ProfileUiState(
     val habitProgress: List<HabitProgressUi> = emptyList()
 )
 
-class ProfileViewModel : ViewModel() {
+class ProfileViewModel(
+    private val authRepository: AuthRepository,
+    private val scheduleRepository: ScheduleRepository
+) : ViewModel() {
     init { AppLog.i("AL/ProfileViewModel", "init") }
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    fun load(context: android.content.Context) {
+    fun load() {
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
-            val authRepo: AuthRepository = createAuthRepository(context)
-            val scheduleRepo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-
-            val profileRes = authRepo.getProfile()
+            val profileRes = authRepository.getProfile()
             if (profileRes.isSuccess) {
                 val profile = profileRes.getOrNull()!!
                 _uiState.value = _uiState.value.copy(profile = profile)
-                val token = authRepo.getAccessToken()
+                val token = authRepository.getAccessToken()
                 if (token.isNullOrBlank()) {
                     _uiState.value = _uiState.value.copy(isLoading = false, error = "You must be logged in.")
                     return@launch
                 }
                 // Fetch habits and schedules in parallel to reduce wait time
                 val (habitsRes, schedulesRes) = coroutineScope {
-                    val a = async { scheduleRepo.getHabitsByUser(profile.id) }
-                    val b = async { scheduleRepo.getAllSchedules() }
+                    val a = async { scheduleRepository.getHabitsByUser(profile.id) }
+                    val b = async { scheduleRepository.getAllSchedules() }
                     Pair(a.await(), b.await())
                 }
                 if (habitsRes.isSuccess) {
@@ -130,11 +130,10 @@ class ProfileViewModel : ViewModel() {
     fun openLogoutConfirm() { _uiState.value = _uiState.value.copy(showLogoutConfirm = true) }
     fun cancelLogout() { _uiState.value = _uiState.value.copy(showLogoutConfirm = false) }
 
-    fun confirmLogout(context: android.content.Context) {
+    fun confirmLogout() {
         _uiState.value = _uiState.value.copy(loggingOut = true, showLogoutConfirm = false, error = null)
         viewModelScope.launch {
-            val repo = createAuthRepository(context)
-            val res = repo.logout()
+            val res = authRepository.logout()
             if (res.isSuccess) {
                 _uiState.value = _uiState.value.copy(loggingOut = false, logoutSuccess = true)
             } else {
@@ -146,5 +145,16 @@ class ProfileViewModel : ViewModel() {
     override fun onCleared() {
         AppLog.i("AL/ProfileViewModel", "onCleared")
         super.onCleared()
+    }
+
+    companion object {
+        fun factory(context: Context): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val app = context.applicationContext as MyApp
+                val c = app.container
+                @Suppress("UNCHECKED_CAST")
+                return ProfileViewModel(c.authRepository, c.scheduleRepository) as T
+            }
+        }
     }
 }

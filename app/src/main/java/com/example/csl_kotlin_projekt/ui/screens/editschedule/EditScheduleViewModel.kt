@@ -5,9 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.csl_kotlin_projekt.data.models.ScheduleResponseDto
 import com.example.csl_kotlin_projekt.data.models.ScheduleStatus
 import com.example.csl_kotlin_projekt.data.models.UpdateScheduleDto
-import com.example.csl_kotlin_projekt.data.network.NetworkModule
 import com.example.csl_kotlin_projekt.data.repository.ScheduleRepository
-import com.example.csl_kotlin_projekt.data.repository.createAuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,6 +15,9 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
 import com.example.csl_kotlin_projekt.util.AppLog
+import android.content.Context
+import androidx.lifecycle.ViewModelProvider
+import com.example.csl_kotlin_projekt.MyApp
 
 data class EditScheduleUiState(
     val isLoading: Boolean = false,
@@ -31,16 +32,17 @@ data class EditScheduleUiState(
     val notesText: String = ""
 )
 
-class EditScheduleViewModel : ViewModel() {
+class EditScheduleViewModel(
+    private val scheduleRepository: ScheduleRepository
+) : ViewModel() {
     init { AppLog.i("AL/EditScheduleViewModel", "init") }
     private val _uiState = MutableStateFlow(EditScheduleUiState())
     val uiState: StateFlow<EditScheduleUiState> = _uiState.asStateFlow()
 
-    fun load(context: android.content.Context, id: Int) {
+    fun load(id: Int) {
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
-            val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val result = repo.getScheduleById(id)
+            val result = scheduleRepository.getScheduleById(id)
             if (result.isSuccess) {
                 val s = result.getOrNull()!!
                 val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -90,7 +92,7 @@ class EditScheduleViewModel : ViewModel() {
         return df.format(cal.time)
     }
 
-    fun save(context: android.content.Context, onSaved: (ScheduleResponseDto) -> Unit) {
+    fun save(onSaved: (ScheduleResponseDto) -> Unit) {
         val s = _uiState.value
         val loaded = s.schedule ?: run {
             _uiState.value = s.copy(error = "No schedule loaded")
@@ -133,8 +135,7 @@ class EditScheduleViewModel : ViewModel() {
         )
         _uiState.value = s.copy(saving = true, error = null)
         viewModelScope.launch {
-            val repo = ScheduleRepository(NetworkModule.createScheduleApiService(context))
-            val result = repo.updateSchedule(id, dto)
+            val result = scheduleRepository.updateSchedule(id, dto)
             if (result.isSuccess) {
                 _uiState.value = _uiState.value.copy(saving = false)
                 onSaved(result.getOrNull()!!)
@@ -147,5 +148,16 @@ class EditScheduleViewModel : ViewModel() {
     override fun onCleared() {
         AppLog.i("AL/EditScheduleViewModel", "onCleared")
         super.onCleared()
+    }
+
+    companion object {
+        fun factory(context: Context): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val app = context.applicationContext as MyApp
+                val c = app.container
+                @Suppress("UNCHECKED_CAST")
+                return EditScheduleViewModel(c.scheduleRepository) as T
+            }
+        }
     }
 }
